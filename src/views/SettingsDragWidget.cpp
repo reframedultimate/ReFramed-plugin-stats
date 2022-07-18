@@ -1,4 +1,5 @@
 #include "stats/views/SettingsDragWidget.hpp"
+#include "stats/views/SettingsStatsItem.hpp"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -15,6 +16,26 @@ SettingsDragWidget::SettingsDragWidget(QWidget* parent)
     setAcceptDrops(true);
 
     setLayout(new QVBoxLayout);
+}
+
+// ----------------------------------------------------------------------------
+void SettingsDragWidget::addStat(StatisticType type)
+{
+    layout()->addWidget(new SettingsStatsItem(type));
+}
+
+// ----------------------------------------------------------------------------
+void SettingsDragWidget::removeStat(StatisticType type)
+{
+    for (int i = 0; i != layout()->count(); ++i)
+    {
+        SettingsStatsItem* item = static_cast<SettingsStatsItem*>(layout()->itemAt(i)->widget());
+        if (item->type() == type)
+        {
+            delete item;
+            break;
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -69,12 +90,9 @@ void SettingsDragWidget::dropEvent(QDropEvent* e)
     QByteArray itemData = e->mimeData()->data("application/x-stats-settings-item");
     QDataStream dataStream(&itemData, QIODevice::ReadOnly);
 
-    QString text;
-    dataStream >> text;
+    StatisticType type;
+    dataStream >> type;
 
-    QLabel* label = new QLabel;
-    label->setText(text);
-    
     int insertIndex = 0;
     while (insertIndex != layout()->count())
     {
@@ -90,7 +108,7 @@ void SettingsDragWidget::dropEvent(QDropEvent* e)
         insertIndex++;
     }
 
-    static_cast<QVBoxLayout*>(layout())->insertWidget(insertIndex, label);
+    static_cast<QVBoxLayout*>(layout())->insertWidget(insertIndex, new SettingsStatsItem(type));
 
     if (e->source() == this)
     {
@@ -101,18 +119,22 @@ void SettingsDragWidget::dropEvent(QDropEvent* e)
     {
         e->acceptProposedAction();
     }
+
+    emit statAdded(type);
 }
 
 // ----------------------------------------------------------------------------
 void SettingsDragWidget::mousePressEvent(QMouseEvent* e)
 {
-    QLabel* item = qobject_cast<QLabel*>(childAt(e->pos()));
+    QWidget* widget = childAt(e->pos());
+    SettingsStatsItem* item = qobject_cast<SettingsStatsItem*>(widget);
+    QLabel* item2 = qobject_cast<QLabel*>(widget);
     if (item == nullptr)
         return;
 
     QByteArray itemData;
     QDataStream dataStream(&itemData, QIODevice::WriteOnly);
-    dataStream << item->text();
+    dataStream << item->type();
 
     QMimeData* mimeData = new QMimeData;
     mimeData->setData("application/x-stats-settings-item", itemData);
@@ -121,12 +143,14 @@ void SettingsDragWidget::mousePressEvent(QMouseEvent* e)
     drag->setMimeData(mimeData);
     drag->setHotSpot(e->pos() - item->pos());
 
-    QString originalText = item->text();
-    item->setText("...");
-
+    item->setDragInProgress();
     if (drag->exec(Qt::MoveAction) == Qt::MoveAction)
+    {
+        emit statRemoved(item->type());
         delete item;
+    }
     else
-        item->setText(originalText);
-
+    {
+        item->setDragCancelled();
+    }
 }

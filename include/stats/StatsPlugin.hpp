@@ -5,6 +5,7 @@
 #include <memory>
 
 class StatsModel;
+class SettingsModel;
 
 class StatsPlugin : public rfcommon::RealtimePlugin
 {
@@ -50,5 +51,6 @@ public:
     void clearSavedGameSession(rfcommon::SavedGameSession* session) override {}
 
 private:
-    std::unique_ptr<StatsModel> model_;
+    std::unique_ptr<StatsModel> statsModel_;
+    std::unique_ptr<SettingsModel> settingsModel_;
 };

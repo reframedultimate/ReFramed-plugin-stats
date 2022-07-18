@@ -1,6 +1,7 @@
 #include "stats/StatsPlugin.hpp"
 #include "stats/models/StatsModel.hpp"
-#include "stats/views/StatsView.hpp"
+#include "stats/models/SettingsModel.hpp"
+#include "stats/views/MainView.hpp"
 #include "rfcommon/RunningGameSession.hpp"
 #include "rfcommon/SavedGameSession.hpp"
 
@@ -9,7 +10,8 @@
 // ----------------------------------------------------------------------------
 StatsPlugin::StatsPlugin(RFPluginFactory* factory)
     : RealtimePlugin(factory)
-    , model_(new StatsModel)
+    , statsModel_(new StatsModel)
+    , settingsModel_(new SettingsModel)
 {
 }
 
@@ -23,7 +25,7 @@ QWidget* StatsPlugin::createView()
 {
     // Create new instance of view. The view registers as a listener to this model
     //return new StatsView(model_.get());
-    return new SettingsView(nullptr);
+    return new MainView(statsModel_.get(), settingsModel_.get());
 }
 
 // ----------------------------------------------------------------------------
@@ -38,11 +40,11 @@ void StatsPlugin::onProtocolMatchEnded(rfcommon::RunningGameSession* session)
 {
     // A match just ended. We tell the model to release any references to the
     // session
-    model_->calculateStatistics(session);
+    statsModel_->calculateStatistics(session);
 }
 
 // ----------------------------------------------------------------------------
 void StatsPlugin::setSavedGameSession(rfcommon::SavedGameSession* session)
 {
-    model_->calculateStatistics(session);
+    statsModel_->calculateStatistics(session);
 }
