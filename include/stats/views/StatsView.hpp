@@ -24,6 +24,10 @@ public:
     ~StatsView();
 
 private:
+    void updateStatsLabels();
+    void recreateLayout();
+
+private:
     void onStatsUpdated() override;
     void onSettingsChanged() override;
 

@@ -1,6 +1,7 @@
 #include "ui_SettingsView.h"
 #include "stats/views/SettingsView.hpp"
 #include "stats/views/SettingsDragWidget.hpp"
+#include "stats/models/SettingsModel.hpp"
 
 #include <QVBoxLayout>
 
@@ -33,13 +34,14 @@ SettingsView::~SettingsView()
 }
 
 // ----------------------------------------------------------------------------
-void SettingsView::onStatEnabled(StatisticType type)
+void SettingsView::onStatEnabled(int insertIndex, StatisticType type)
 {
-
+    settings_->setStatEnabled(type, true);
+    settings_->setStatAtIndex(insertIndex, type);
 }
 
 // ----------------------------------------------------------------------------
-void SettingsView::onStatDisabled(StatisticType type)
+void SettingsView::onStatDisabled(int insertIndex, StatisticType type)
 {
-
+    settings_->setStatEnabled(type, false);
 }

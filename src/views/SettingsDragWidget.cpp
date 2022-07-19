@@ -110,6 +110,20 @@ void SettingsDragWidget::dropEvent(QDropEvent* e)
 
     static_cast<QVBoxLayout*>(layout())->insertWidget(insertIndex, new SettingsStatsItem(type));
 
+    // If an item was dragged and dropped between the same widget, then it will exist
+    // twice in the layout for a short amount of time. The following code finds the
+    // previous location of the same item (which will be deleted once this function
+    // returns), and is used to correct the insertion index so our SettingsModel
+    // gets the correct value
+    int prevLocation = 0;
+    while (prevLocation != layout()->count())
+    {
+        SettingsStatsItem* item = static_cast<SettingsStatsItem*>(layout()->itemAt(prevLocation)->widget());
+        if (type == item->type())
+            break;
+        prevLocation++;
+    }
+
     if (e->source() == this)
     {
         e->setDropAction(Qt::MoveAction);
@@ -120,7 +134,11 @@ void SettingsDragWidget::dropEvent(QDropEvent* e)
         e->acceptProposedAction();
     }
 
-    emit statAdded(type);
+    // Correct insert index for SettingsModel
+    if (prevLocation < insertIndex)
+        insertIndex--;
+
+    emit statAdded(insertIndex, type);
 }
 
 // ----------------------------------------------------------------------------

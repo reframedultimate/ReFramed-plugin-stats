@@ -11,20 +11,16 @@ public:
     bool load(const char* filename);
     bool save(const char* filename);
 
-    void setStatEnabled(StatisticType type, bool enable)
-        { statEnabled_[type] = enable; }
-    bool statEnabled(StatisticType type) const
-        { return statEnabled_[type]; }
+    void setStatEnabled(StatisticType type, bool enable);
+    bool statEnabled(StatisticType type) const;
 
-    void setStatPosition(StatisticType type, int idx)
-        { statPosition_[type] = idx; }
-    int statPosition(StatisticType type) const
-        { return statPosition_[type]; }
+    void setStatAtIndex(int idx, StatisticType type);
+    StatisticType statAtIndex(int idx) const;
 
-    void setExportToOBS(bool enable)
-        { exportToOBS_ = enable; }
-    bool exportToOBS() const
-        { return exportToOBS_; }
+    int numStatsEnabled() const;
+
+    void setExportToOBS(bool enable);
+    bool exportToOBS() const;
 
     rfcommon::ListenerDispatcher<SettingsListener> dispatcher;
 
@@ -35,7 +31,7 @@ private:
 #undef X
     };
 
-    int statPosition_[STAT_COUNT] = {
+    rfcommon::SmallVector<StatisticType, STAT_COUNT> statAtIndex_ = {
 #define X(type, str) STAT_##type,
         STATISTIC_TYPES_LIST
 #undef X

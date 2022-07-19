@@ -13,7 +13,7 @@ public:
     void removeStat(StatisticType type);
 
 signals:
-    void statAdded(StatisticType type);
+    void statAdded(int insertIndex, StatisticType type);
     void statRemoved(StatisticType type);
 
 protected:

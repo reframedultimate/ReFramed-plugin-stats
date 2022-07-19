@@ -26,8 +26,8 @@ StatsView::StatsView(StatsModel* stats, SettingsModel* settings, QWidget* parent
     , layout_(new QGridLayout)
 {
     setLayout(layout_);
-    StatsView::onSettingsChanged();
-    StatsView::onStatsUpdated();
+    recreateLayout();
+    updateStatsLabels();
 
     // Listen to any changes to the model
     stats_->dispatcher.addListener(this);
@@ -43,17 +43,16 @@ StatsView::~StatsView()
 }
 
 // ----------------------------------------------------------------------------
-void StatsView::onStatsUpdated()
+void StatsView::updateStatsLabels()
 {
-    for (int i = 0; i != STAT_COUNT; ++i)
+    for (int i = 0; i != settings_->numStatsEnabled(); ++i)
     {
-        StatisticType statType = static_cast<StatisticType>(i);
+        StatisticType statType = settings_->statAtIndex(i);
         if (settings_->statEnabled(statType) == false)
             continue;
 
-        int statIdx = settings_->statPosition(statType);
-        QLabel* p1Label = qobject_cast<QLabel*>(layout_->itemAtPosition(statIdx + 2, 0)->widget());
-        QLabel* p2Label = qobject_cast<QLabel*>(layout_->itemAtPosition(statIdx + 2, 4)->widget());
+        QLabel* p1Label = qobject_cast<QLabel*>(layout_->itemAtPosition(i + 2, 0)->widget());
+        QLabel* p2Label = qobject_cast<QLabel*>(layout_->itemAtPosition(i + 2, 4)->widget());
 
         switch (statType)
         {
@@ -105,7 +104,7 @@ void StatsView::onStatsUpdated()
 }
 
 // ----------------------------------------------------------------------------
-void StatsView::onSettingsChanged()
+void StatsView::recreateLayout()
 {
     clearLayout(layout_);
 
@@ -129,9 +128,9 @@ void StatsView::onSettingsChanged()
     line->setFrameShadow(QFrame::Sunken);
     layout_->addWidget(line, 1, 0, 1, 5);
 
-    for (int i = 0; i != STAT_COUNT; ++i)
+    for (int i = 0; i != settings_->numStatsEnabled(); ++i)
     {
-        StatisticType statType = static_cast<StatisticType>(i);
+        StatisticType statType = settings_->statAtIndex(i);
         if (settings_->statEnabled(statType) == false)
             continue;
 
@@ -144,9 +143,21 @@ void StatsView::onSettingsChanged()
         QLabel* p2Stat = new QLabel;
         p2Stat->setFont(statsFont);
 
-        int statIdx = settings_->statPosition(statType);
-        layout_->addWidget(p1Stat, statIdx + 2, 0, Qt::AlignRight);
-        layout_->addWidget(label, statIdx + 2, 2, Qt::AlignCenter);
-        layout_->addWidget(p2Stat, statIdx + 2, 4, Qt::AlignLeft);
+        layout_->addWidget(p1Stat, i + 2, 0, Qt::AlignRight);
+        layout_->addWidget(label, i + 2, 2, Qt::AlignCenter);
+        layout_->addWidget(p2Stat, i + 2, 4, Qt::AlignLeft);
     }
+}
+
+// ----------------------------------------------------------------------------
+void StatsView::onStatsUpdated()
+{
+    updateStatsLabels();
+}
+
+// ----------------------------------------------------------------------------
+void StatsView::onSettingsChanged()
+{
+    recreateLayout();
+    updateStatsLabels();
 }

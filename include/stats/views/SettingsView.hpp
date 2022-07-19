@@ -19,8 +19,8 @@ public:
     ~SettingsView();
 
 private slots:
-    void onStatEnabled(StatisticType type);
-    void onStatDisabled(StatisticType type);
+    void onStatEnabled(int insertIndex, StatisticType type);
+    void onStatDisabled(int insertIndex, StatisticType type);
 
 private:
     Ui::SettingsView* ui_;
