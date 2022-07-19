@@ -18,6 +18,8 @@ StatsPlugin::StatsPlugin(RFPluginFactory* factory)
 // ----------------------------------------------------------------------------
 StatsPlugin::~StatsPlugin()
 {
+    if (session_)
+        session_->dispatcher.removeListener(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -36,15 +38,54 @@ void StatsPlugin::destroyView(QWidget* view)
 }
 
 // ----------------------------------------------------------------------------
+void StatsPlugin::onProtocolMatchStarted(rfcommon::RunningGameSession* session)
+{
+    // Unregister from current session, register to new session
+    if (session_)
+        session_->dispatcher.removeListener(this);
+    session_ = session;
+    session_->dispatcher.addListener(this);
+
+    // If the session already has frames, process them so we are caught up
+    statsModel_->resetStatistics(session_);
+    session_->replayUniqueFrameEvents(this);
+}
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::onProtocolMatchResumed(rfcommon::RunningGameSession* session)
+{
+    // Unregister from current session, register to new session
+    if (session_)
+        session_->dispatcher.removeListener(this);
+    session_ = session;
+    session_->dispatcher.addListener(this);
+
+    // If the session already has frames, process them so we are caught up
+    statsModel_->resetStatistics(session_);
+    session_->replayUniqueFrameEvents(this);
+}
+
+// ----------------------------------------------------------------------------
 void StatsPlugin::onProtocolMatchEnded(rfcommon::RunningGameSession* session)
 {
-    // A match just ended. We tell the model to release any references to the
-    // session
-    statsModel_->calculateStatistics(session);
+    if (session_)
+        session_->dispatcher.removeListener(this);
+    session_.drop();
+
+    // TODO export stats data
 }
 
 // ----------------------------------------------------------------------------
 void StatsPlugin::setSavedGameSession(rfcommon::SavedGameSession* session)
 {
-    statsModel_->calculateStatistics(session);
+    statsModel_->resetStatistics(session);
+    session->replayUniqueFrameEvents(this);
+
+    // TODO export stats data
+}
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::onRunningSessionNewUniqueFrame(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+{
+    statsModel_->updateStatistics(states);
 }
