@@ -11,7 +11,6 @@ include (ReFramedPlugin)
 
 reframed_add_plugin (plugin-${PLUGIN_NAME}
     FORMS
-        "forms/StatsView.ui"
         "forms/SettingsView.ui"
     SOURCES
         "src/models/SettingsModel.cpp"
@@ -39,7 +38,6 @@ reframed_add_plugin (plugin-${PLUGIN_NAME}
     INCLUDE_DIRECTORIES
         "include"
     MOC_HEADERS
-        "include/${PLUGIN_NAME}/views/MainView.hpp"
         "include/${PLUGIN_NAME}/views/SettingsView.hpp"
         "include/${PLUGIN_NAME}/views/StatsView.hpp"
         "include/${PLUGIN_NAME}/views/SettingsDragWidget.hpp"
