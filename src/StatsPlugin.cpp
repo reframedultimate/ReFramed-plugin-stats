@@ -47,7 +47,7 @@ void StatsPlugin::onProtocolMatchStarted(rfcommon::RunningGameSession* session)
     session_->dispatcher.addListener(this);
 
     // If the session already has frames, process them so we are caught up
-    statsModel_->resetStatistics(session_);
+    statsModel_->resetStatistics();
     session_->replayUniqueFrameEvents(this);
 }
 
@@ -61,7 +61,7 @@ void StatsPlugin::onProtocolMatchResumed(rfcommon::RunningGameSession* session)
     session_->dispatcher.addListener(this);
 
     // If the session already has frames, process them so we are caught up
-    statsModel_->resetStatistics(session_);
+    statsModel_->resetStatistics();
     session_->replayUniqueFrameEvents(this);
 }
 
@@ -78,7 +78,7 @@ void StatsPlugin::onProtocolMatchEnded(rfcommon::RunningGameSession* session)
 // ----------------------------------------------------------------------------
 void StatsPlugin::setSavedGameSession(rfcommon::SavedGameSession* session)
 {
-    statsModel_->resetStatistics(session);
+    statsModel_->resetStatistics();
     session->replayUniqueFrameEvents(this);
 
     // TODO export stats data

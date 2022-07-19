@@ -15,11 +15,13 @@ class StatsModel
 public:
     static const int MAX_FIGHTERS = 2; 
 
+    StatsModel();
+
     /*!
      * \brief Resets all of the stats to their default value. Call this
      * once before calling updateStatistics().
      */
-    void resetStatistics(const rfcommon::Session* session);
+    void resetStatistics();
 
     /*!
      * \brief Incrementally updates all of the statistics from a single
@@ -27,6 +29,32 @@ public:
      */
     void updateStatistics(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states);
 
+    double avgDamagePerOpening(int fighterIdx) const { return 0.0; }
+    double avgKillPercent(int fighterIdx) const { return 0.0; }
+    double earliestKillPercent(int fighterIdx) const { return 0.0; }
+    double latestDeathPercent(int fighterIdx) const { return 0.0; }
+    int numNeutralWins(int fighterIdx) const { return 0; }
+    double neutralWinPercent(int fighterIdx) const { return 0.0; }
+    int numOpeningsPerKill(int fighterIdx) const { return 0; }
+    int numStocksTaken(int fighterIdx) const { return 0; }
+    double stageControlPercent(int fighterIdx) const { return 0.0; }
+
+    /*!
+     * \brief Total amount of damage (percent) a player dealt.
+     *
+     * In 1v1, this is the total amount of damage the opponent received.
+     * This metric currently counts self damage as well (in 1v1) as there is
+     * no way to distinguish self damage from projectile damage.
+     *
+     * With 3 or more players, this statistic doesn't include projectile damage
+     * because it's not possible to distinguish self damage from projectile damage.
+     */
+    double totalDamageDealt(int fighterIdx) const 
+        { return totalDamageDealt_[fighterIdx]; }
+
+    /*!
+     * \brief Total amount of damage (percent) received.
+     */
     double totalDamageTaken(int fighterIdx) const 
         { return totalDamageTaken_[fighterIdx]; }
 

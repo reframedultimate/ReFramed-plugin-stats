@@ -26,6 +26,7 @@ reframed_add_plugin (plugin-${PLUGIN_NAME}
         "src/Plugin.cpp"
     HEADERS
         "include/${PLUGIN_NAME}/listeners/StatsListener.hpp"
+        "include/${PLUGIN_NAME}/listeners/SettingsListener.hpp"
         "include/${PLUGIN_NAME}/models/SettingsModel.hpp"
         "include/${PLUGIN_NAME}/models/StatsModel.hpp"
         "include/${PLUGIN_NAME}/models/StatisticType.hpp"

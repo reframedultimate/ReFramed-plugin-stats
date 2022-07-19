@@ -3,12 +3,19 @@
 #include "rfcommon/PlayerState.hpp"
 
 // ----------------------------------------------------------------------------
-void StatsModel::resetStatistics(const rfcommon::Session* session)
+StatsModel::StatsModel()
+{
+    StatsModel::resetStatistics();
+}
+
+// ----------------------------------------------------------------------------
+void StatsModel::resetStatistics()
 {
     for (int i = 0; i != MAX_FIGHTERS; ++i)
     {
         // Reset damage counters
         totalDamageTaken_[i] = 0.0;
+        totalDamageDealt_[i] = 0.0;
         oldDamage_[i] = 0.0;
 
         // Reset stock counters
