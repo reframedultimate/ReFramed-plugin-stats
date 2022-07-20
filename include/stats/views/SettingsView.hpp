@@ -19,6 +19,9 @@ public:
     ~SettingsView();
 
 private slots:
+    void onOBSCheckBoxToggled(bool enable);
+    void onOBSInsertNewLinesCheckBoxToggled(bool enable);
+    void onOBSBrowseFolderButtonReleased();
     void onStatEnabled(int insertIndex, StatisticType type);
     void onStatDisabled(int insertIndex, StatisticType type);
 

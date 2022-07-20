@@ -4,6 +4,7 @@
 #include "stats/models/SettingsModel.hpp"
 
 #include <QVBoxLayout>
+#include <QFileDialog>
 
 // ----------------------------------------------------------------------------
 SettingsView::SettingsView(SettingsModel* model, QWidget* parent)
@@ -23,6 +24,9 @@ SettingsView::SettingsView(SettingsModel* model, QWidget* parent)
     ui_->groupBox_enabledStats->layout()->addWidget(enabledStats_);
     ui_->groupBox_disabledStats->layout()->addWidget(disabledStats_);
 
+    connect(ui_->checkBox_obsExport, &QCheckBox::toggled, this, &SettingsView::onOBSCheckBoxToggled);
+    connect(ui_->checkBox_obsInsertNewlines, &QCheckBox::toggled, this, &SettingsView::onOBSInsertNewLinesCheckBoxToggled);
+    connect(ui_->toolButton_obsBrowseFolder, &QToolButton::released, this, &SettingsView::onOBSBrowseFolderButtonReleased);
     connect(enabledStats_, &SettingsDragWidget::statAdded, this, &SettingsView::onStatEnabled);
     connect(disabledStats_, &SettingsDragWidget::statAdded, this, &SettingsView::onStatDisabled);
 }
@@ -31,6 +35,36 @@ SettingsView::SettingsView(SettingsModel* model, QWidget* parent)
 SettingsView::~SettingsView()
 {
     delete ui_;
+}
+
+// ----------------------------------------------------------------------------
+void SettingsView::onOBSCheckBoxToggled(bool enable)
+{
+    ui_->label_obsDestFolder->setEnabled(enable);
+    ui_->lineEdit_obsDestFolder->setEnabled(enable);
+    ui_->toolButton_obsBrowseFolder->setEnabled(enable);
+    ui_->checkBox_obsInsertNewlines->setEnabled(enable);
+    ui_->spinBox_obsNewlines->setEnabled(enable && ui_->checkBox_obsInsertNewlines->isChecked());
+
+    settings_->setExportToOBS(enable);
+    settings_->setAdditionalNewlinesOBS(ui_->checkBox_obsInsertNewlines->isChecked() ? ui_->spinBox_obsNewlines->value() : 0);
+}
+
+// ----------------------------------------------------------------------------
+void SettingsView::onOBSInsertNewLinesCheckBoxToggled(bool enable)
+{
+    ui_->spinBox_obsNewlines->setEnabled(enable);
+
+    settings_->setAdditionalNewlinesOBS(enable ? ui_->spinBox_obsNewlines->value() : 0);
+}
+
+// ----------------------------------------------------------------------------
+void SettingsView::onOBSBrowseFolderButtonReleased()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, "Destination Folder");
+    ui_->lineEdit_obsDestFolder->setText(dir);
+
+    settings_->setDestinationFolderOBS(dir);
 }
 
 // ----------------------------------------------------------------------------

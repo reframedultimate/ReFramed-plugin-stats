@@ -3,6 +3,8 @@
 #include "rfcommon/ListenerDispatcher.hpp"
 #include "stats/models/StatisticType.hpp"
 
+#include <QString>
+
 class SettingsListener;
 
 class SettingsModel
@@ -20,7 +22,13 @@ public:
     int numStatsEnabled() const;
 
     void setExportToOBS(bool enable);
-    bool exportToOBS() const;
+    bool exportToOBS() const { return exportToOBS_; }
+
+    void setAdditionalNewlinesOBS(int lines);
+    int additionalNewlinesOBS() const { return additionalNewlinesOBS_;  }
+
+    void setDestinationFolderOBS(const QString& dir);
+    const QString& destinationFolderOBS() const { return destinationFolderOBS_; }
 
     rfcommon::ListenerDispatcher<SettingsListener> dispatcher;
 
@@ -38,4 +46,6 @@ private:
     };
 
     bool exportToOBS_ = false;
+    int additionalNewlinesOBS_ = 0;
+    QString destinationFolderOBS_;
 };

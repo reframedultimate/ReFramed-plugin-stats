@@ -29,7 +29,8 @@ private:
 
 private:
     void onStatsUpdated() override;
-    void onSettingsChanged() override;
+    void onSettingsStatTypesChanged() override;
+    void onSettingsOBSChanged() override {}
 
 private:
     // We hold a weak reference to the model (StatsModel) so we can listen

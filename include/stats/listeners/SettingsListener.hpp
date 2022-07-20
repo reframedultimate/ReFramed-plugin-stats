@@ -3,5 +3,6 @@
 class SettingsListener
 {
 public:
-    virtual void onSettingsChanged() = 0;
+    virtual void onSettingsStatTypesChanged() = 0;
+    virtual void onSettingsOBSChanged() = 0;
 };

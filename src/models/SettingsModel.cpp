@@ -32,7 +32,7 @@ void SettingsModel::setStatEnabled(StatisticType type, bool enable)
     }
 
     statEnabled_[type] = enable;
-    dispatcher.dispatch(&SettingsListener::onSettingsChanged);
+    dispatcher.dispatch(&SettingsListener::onSettingsStatTypesChanged);
 }
 
 // ----------------------------------------------------------------------------
@@ -55,7 +55,7 @@ void SettingsModel::setStatAtIndex(int idx, StatisticType type)
     statAtIndex_.take(currentIdx);
     statAtIndex_.insert(idx, type);
 
-    dispatcher.dispatch(&SettingsListener::onSettingsChanged);
+    dispatcher.dispatch(&SettingsListener::onSettingsStatTypesChanged);
 }
 
 // ----------------------------------------------------------------------------
@@ -74,11 +74,19 @@ int SettingsModel::numStatsEnabled() const
 void SettingsModel::setExportToOBS(bool enable)
 {
     exportToOBS_ = enable;
-    dispatcher.dispatch(&SettingsListener::onSettingsChanged);
+    dispatcher.dispatch(&SettingsListener::onSettingsOBSChanged);
 }
 
 // ----------------------------------------------------------------------------
-bool SettingsModel::exportToOBS() const
+void SettingsModel::setAdditionalNewlinesOBS(int lines)
 {
-    return exportToOBS_;
+    additionalNewlinesOBS_ = lines;
+    dispatcher.dispatch(&SettingsListener::onSettingsOBSChanged);
+}
+
+// ----------------------------------------------------------------------------
+void SettingsModel::setDestinationFolderOBS(const QString& dir)
+{
+    destinationFolderOBS_ = dir;
+    dispatcher.dispatch(&SettingsListener::onSettingsOBSChanged);
 }
