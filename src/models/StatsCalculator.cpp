@@ -1,15 +1,16 @@
-#include "stats/models/StatsModel.hpp"
+#include "stats/models/StatsCalculator.hpp"
+#include "stats/listeners/StatsCalculatorListener.hpp"
 #include "rfcommon/Session.hpp"
 #include "rfcommon/PlayerState.hpp"
 
 // ----------------------------------------------------------------------------
-StatsModel::StatsModel()
+StatsCalculator::StatsCalculator()
 {
-    StatsModel::resetStatistics();
+    StatsCalculator::resetStatistics();
 }
 
 // ----------------------------------------------------------------------------
-void StatsModel::resetStatistics()
+void StatsCalculator::resetStatistics()
 {
     for (int i = 0; i != MAX_FIGHTERS; ++i)
     {
@@ -29,12 +30,14 @@ void StatsModel::resetStatistics()
         stageControl_[i] = 0;
         isInNeutralState_[i] = 0;
     }
+
+    dispatcher.dispatch(&StatsCalculatorListener::onStatsUpdated);
 }
 
 // ----------------------------------------------------------------------------
-void StatsModel::updateStatistics(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::updateStatistics(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
 {
-    // We only care about 1v1
+    // We only care about 1v1 for now
     if (states.count() != 2)
         return;
 
@@ -42,10 +45,12 @@ void StatsModel::updateStatistics(const rfcommon::SmallVector<rfcommon::PlayerSt
     updateDamagesAtDeath(states);
     updateFirstBlood(states);
     updateStageControl(states);
+
+    dispatcher.dispatch(&StatsCalculatorListener::onStatsUpdated);
 }
 
 // ----------------------------------------------------------------------------
-void StatsModel::updateDamageTaken(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::updateDamageTaken(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
 {
     for (int i = 0; i != states.count(); ++i)
     {
@@ -89,7 +94,7 @@ void StatsModel::updateDamageTaken(const rfcommon::SmallVector<rfcommon::PlayerS
 }
 
 // ----------------------------------------------------------------------------
-void StatsModel::updateDamagesAtDeath(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::updateDamagesAtDeath(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
 {
     for (int i = 0; i != states.count(); ++i)
     {
@@ -104,7 +109,7 @@ void StatsModel::updateDamagesAtDeath(const rfcommon::SmallVector<rfcommon::Play
 }
 
 // ----------------------------------------------------------------------------
-void StatsModel::updateFirstBlood(const rfcommon::SmallVector<rfcommon::PlayerState, 8> & states)
+void StatsCalculator::updateFirstBlood(const rfcommon::SmallVector<rfcommon::PlayerState, 8> & states)
 {
     if (firstBloodFighterIdx_ == -1)
     {
@@ -131,7 +136,7 @@ static bool isTouchingGround(const rfcommon::PlayerState& state)
 
     return true;
 }
-void StatsModel::updateStageControl(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::updateStageControl(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
 {
     // Got hit? No longer in neutral state
     for (int i = 0; i != states.count(); ++i)

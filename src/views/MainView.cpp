@@ -6,7 +6,7 @@
 #include <QTabWidget>
 
 // ----------------------------------------------------------------------------
-MainView::MainView(StatsModel* statsModel, SettingsModel* settingsModel, QWidget* parent)
+MainView::MainView(StatsCalculator* statsModel, SettingsModel* settingsModel, QWidget* parent)
 {
     setLayout(new QVBoxLayout);
 

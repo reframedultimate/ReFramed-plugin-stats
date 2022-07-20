@@ -1,7 +1,7 @@
 #include "ui_SettingsView.h"
-#include "stats/views/SettingsView.hpp"
-#include "stats/views/SettingsDragWidget.hpp"
 #include "stats/models/SettingsModel.hpp"
+#include "stats/views/SettingsView.hpp"
+#include "stats/widgets/SettingsDragWidget.hpp"
 
 #include <QVBoxLayout>
 #include <QFileDialog>
@@ -17,7 +17,7 @@ SettingsView::SettingsView(SettingsModel* model, QWidget* parent)
     ui_->setupUi(this);
 
     for (int i = 0; i != STAT_COUNT; ++i)
-        enabledStats_->addStat(static_cast<StatisticType>(i));
+        enabledStats_->addStat(static_cast<StatType>(i));
 
     ui_->groupBox_enabledStats->setLayout(new QVBoxLayout);
     ui_->groupBox_disabledStats->setLayout(new QVBoxLayout);
@@ -68,14 +68,14 @@ void SettingsView::onOBSBrowseFolderButtonReleased()
 }
 
 // ----------------------------------------------------------------------------
-void SettingsView::onStatEnabled(int insertIndex, StatisticType type)
+void SettingsView::onStatEnabled(int insertIndex, StatType type)
 {
     settings_->setStatEnabled(type, true);
     settings_->setStatAtIndex(insertIndex, type);
 }
 
 // ----------------------------------------------------------------------------
-void SettingsView::onStatDisabled(int insertIndex, StatisticType type)
+void SettingsView::onStatDisabled(int insertIndex, StatType type)
 {
     settings_->setStatEnabled(type, false);
 }

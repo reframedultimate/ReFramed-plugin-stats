@@ -14,7 +14,7 @@ bool SettingsModel::save(const char* filename)
 }
 
 // ----------------------------------------------------------------------------
-void SettingsModel::setStatEnabled(StatisticType type, bool enable)
+void SettingsModel::setStatEnabled(StatType type, bool enable)
 {
     if (statEnabled_[type] == enable)
         return;
@@ -36,13 +36,13 @@ void SettingsModel::setStatEnabled(StatisticType type, bool enable)
 }
 
 // ----------------------------------------------------------------------------
-bool SettingsModel::statEnabled(StatisticType type) const
+bool SettingsModel::statEnabled(StatType type) const
 {
     return statEnabled_[type];
 }
 
 // ----------------------------------------------------------------------------
-void SettingsModel::setStatAtIndex(int idx, StatisticType type)
+void SettingsModel::setStatAtIndex(int idx, StatType type)
 {
     if (statAtIndex_[idx] == type)
         return;
@@ -59,7 +59,7 @@ void SettingsModel::setStatAtIndex(int idx, StatisticType type)
 }
 
 // ----------------------------------------------------------------------------
-StatisticType SettingsModel::statAtIndex(int idx) const
+StatType SettingsModel::statAtIndex(int idx) const
 {
     return statAtIndex_[idx];
 }

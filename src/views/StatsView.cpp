@@ -1,6 +1,7 @@
 #include "stats/views/StatsView.hpp"
-#include "stats/models/StatsModel.hpp"
+#include "stats/models/StatsCalculator.hpp"
 #include "stats/models/SettingsModel.hpp"
+#include "stats/util/StatsFormatter.hpp"
 
 #include <QGridLayout>
 #include <QLabel>
@@ -19,7 +20,7 @@ static void clearLayout(QLayout* layout)
 }
 
 // ----------------------------------------------------------------------------
-StatsView::StatsView(StatsModel* stats, SettingsModel* settings, QWidget* parent)
+StatsView::StatsView(StatsCalculator* stats, SettingsModel* settings, QWidget* parent)
     : QWidget(parent)
     , stats_(stats)
     , settings_(settings)
@@ -45,61 +46,18 @@ StatsView::~StatsView()
 // ----------------------------------------------------------------------------
 void StatsView::updateStatsLabels()
 {
+    StatsFormatter fmt(stats_);
     for (int i = 0; i != settings_->numStatsEnabled(); ++i)
     {
-        StatisticType statType = settings_->statAtIndex(i);
+        StatType statType = settings_->statAtIndex(i);
         if (settings_->statEnabled(statType) == false)
             continue;
 
         QLabel* p1Label = qobject_cast<QLabel*>(layout_->itemAtPosition(i + 2, 0)->widget());
         QLabel* p2Label = qobject_cast<QLabel*>(layout_->itemAtPosition(i + 2, 4)->widget());
 
-        switch (statType)
-        {
-        case STAT_AVERAGE_DAMAGE_PER_OPENING:
-            p1Label->setText(QString::number(stats_->avgDamagePerOpening(0), 'g', 1) + "%");
-            p2Label->setText(QString::number(stats_->avgDamagePerOpening(1), 'g', 1) + "%");
-            break;
-        case STAT_AVERAGE_KILL_PERCENT:
-            p1Label->setText(QString::number(stats_->avgKillPercent(0), 'g', 1) + "%");
-            p2Label->setText(QString::number(stats_->avgKillPercent(1), 'g', 1) + "%");
-            break;
-        case STAT_EARLIEST_KILL:
-            p1Label->setText(QString::number(stats_->earliestKillPercent(0), 'g', 1) + "%");
-            p2Label->setText(QString::number(stats_->earliestKillPercent(1), 'g', 1) + "%");
-            break;
-        case STAT_LATEST_DEATH:
-            p1Label->setText(QString::number(stats_->latestDeathPercent(0), 'g', 1) + "%");
-            p2Label->setText(QString::number(stats_->latestDeathPercent(1), 'g', 1) + "%");
-            break;
-        case STAT_NEUTRAL_WINS:
-            p1Label->setText(QString::number(stats_->numNeutralWins(0)));
-            p2Label->setText(QString::number(stats_->numNeutralWins(1)));
-            break;
-        case STAT_NEUTRAL_WIN_PERCENT:
-            p1Label->setText(QString::number(stats_->neutralWinPercent(0), 'g', 1) + "%");
-            p2Label->setText(QString::number(stats_->neutralWinPercent(1), 'g', 1) + "%");
-            break;
-        case STAT_OPENINGS_PER_KILL:
-            p1Label->setText(QString::number(stats_->numOpeningsPerKill(0)));
-            p2Label->setText(QString::number(stats_->numOpeningsPerKill(1)));
-            break;
-        case STAT_STOCKS_TAKEN:
-            p1Label->setText(QString::number(stats_->numStocksTaken(0)));
-            p2Label->setText(QString::number(stats_->numStocksTaken(1)));
-            break;
-        case STAT_STAGE_CONTROL_PERCENT:
-            p1Label->setText(QString::number(stats_->stageControlPercent(0), 'g', 1) + "%");
-            p2Label->setText(QString::number(stats_->stageControlPercent(1), 'g', 1) + "%");
-            break;
-        case STAT_TOTAL_DAMAGE_DEALT:
-            p1Label->setText(QString::number(stats_->totalDamageDealt(0), 'g', 1) + "%");
-            p2Label->setText(QString::number(stats_->totalDamageDealt(1), 'g', 1) + "%");
-            break;
-
-        default:
-            break;
-        }
+        p1Label->setText(fmt.playerStatAsString(0, statType));
+        p2Label->setText(fmt.playerStatAsString(1, statType));
     }
 }
 
@@ -130,11 +88,11 @@ void StatsView::recreateLayout()
 
     for (int i = 0; i != settings_->numStatsEnabled(); ++i)
     {
-        StatisticType statType = settings_->statAtIndex(i);
+        StatType statType = settings_->statAtIndex(i);
         if (settings_->statEnabled(statType) == false)
             continue;
 
-        QLabel* label = new QLabel(statisticTypeToString(statType));
+        QLabel* label = new QLabel(statTypeToString(statType));
         label->setFont(titleFont);
 
         QLabel* p1Stat = new QLabel;

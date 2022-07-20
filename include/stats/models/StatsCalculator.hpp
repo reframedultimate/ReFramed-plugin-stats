@@ -8,14 +8,14 @@ namespace rfcommon {
     class PlayerState;
 }
 
-class StatsListener;
+class StatsCalculatorListener;
 
-class StatsModel
+class StatsCalculator
 {
 public:
     static const int MAX_FIGHTERS = 2; 
 
-    StatsModel();
+    StatsCalculator();
 
     /*!
      * \brief Resets all of the stats to their default value. Call this
@@ -58,7 +58,7 @@ public:
     double totalDamageTaken(int fighterIdx) const 
         { return totalDamageTaken_[fighterIdx]; }
 
-    rfcommon::ListenerDispatcher<StatsListener> dispatcher;
+    rfcommon::ListenerDispatcher<StatsCalculatorListener> dispatcher;
 
 private:
     void updateDamageTaken(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stats/models/StatisticType.hpp"
+#include "stats/StatType.hpp"
 #include <QFrame>
 
 class SettingsDragWidget : public QFrame
@@ -9,12 +9,12 @@ class SettingsDragWidget : public QFrame
 public:
     explicit SettingsDragWidget(QWidget* parent=nullptr);
 
-    void addStat(StatisticType type);
-    void removeStat(StatisticType type);
+    void addStat(StatType type);
+    void removeStat(StatType type);
 
 signals:
-    void statAdded(int insertIndex, StatisticType type);
-    void statRemoved(StatisticType type);
+    void statAdded(int insertIndex, StatType type);
+    void statRemoved(StatType type);
 
 protected:
     void dragEnterEvent(QDragEnterEvent* e) override;

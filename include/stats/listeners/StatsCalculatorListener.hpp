@@ -1,6 +1,6 @@
 #pragma once
 
-class StatsListener
+class StatsCalculatorListener
 {
 public:
     virtual void onStatsUpdated() = 0;

@@ -1,10 +1,10 @@
-#include "stats/views/SettingsStatsItem.hpp"
+#include "stats/widgets/SettingsStatsItem.hpp"
 
 #include <QLabel>
 
 // ----------------------------------------------------------------------------
-SettingsStatsItem::SettingsStatsItem(StatisticType type, QWidget* parent)
-    : QLabel(statisticTypeToString(type), parent)
+SettingsStatsItem::SettingsStatsItem(StatType type, QWidget* parent)
+    : QLabel(statTypeToString(type), parent)
     , type_(type)
 {
 }

@@ -10,7 +10,7 @@ namespace rfcommon {
     class Session;
 }
 
-class StatsModel;
+class StatsCalculator;
 class SettingsModel;
 
 class StatsPlugin : public rfcommon::RealtimePlugin, public rfcommon::SessionListener
@@ -70,6 +70,6 @@ public:
 
 private:
     rfcommon::Reference<rfcommon::Session> session_;
-    std::unique_ptr<StatsModel> statsModel_;
+    std::unique_ptr<StatsCalculator> statsModel_;
     std::unique_ptr<SettingsModel> settingsModel_;
 };

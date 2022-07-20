@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stats/listeners/StatsListener.hpp"
+#include "stats/listeners/StatsCalculatorListener.hpp"
 #include "stats/listeners/SettingsListener.hpp"
 #include <QWidget>
 
@@ -10,17 +10,17 @@ namespace Ui {
 }
 
 class QGridLayout;
-class StatsModel;
+class StatsCalculator;
 class SettingsModel;
 
 class StatsView : public QWidget
-                , public StatsListener
+                , public StatsCalculatorListener
                 , public SettingsListener
 {
     Q_OBJECT
 
 public:
-    explicit StatsView(StatsModel* stats, SettingsModel* settings, QWidget* parent=nullptr);
+    explicit StatsView(StatsCalculator* stats, SettingsModel* settings, QWidget* parent=nullptr);
     ~StatsView();
 
 private:
@@ -35,7 +35,7 @@ private:
 private:
     // We hold a weak reference to the model (StatsModel) so we can listen
     // to it
-    StatsModel* stats_;
+    StatsCalculator* stats_;
 
     // We also listen to changes to the settings
     SettingsModel* settings_;

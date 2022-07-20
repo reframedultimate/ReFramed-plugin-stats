@@ -1,5 +1,5 @@
-#include "stats/views/SettingsDragWidget.hpp"
-#include "stats/views/SettingsStatsItem.hpp"
+#include "stats/widgets/SettingsDragWidget.hpp"
+#include "stats/widgets/SettingsStatsItem.hpp"
 
 #include <QVBoxLayout>
 #include <QLabel>
@@ -19,13 +19,13 @@ SettingsDragWidget::SettingsDragWidget(QWidget* parent)
 }
 
 // ----------------------------------------------------------------------------
-void SettingsDragWidget::addStat(StatisticType type)
+void SettingsDragWidget::addStat(StatType type)
 {
     layout()->addWidget(new SettingsStatsItem(type));
 }
 
 // ----------------------------------------------------------------------------
-void SettingsDragWidget::removeStat(StatisticType type)
+void SettingsDragWidget::removeStat(StatType type)
 {
     for (int i = 0; i != layout()->count(); ++i)
     {
@@ -90,7 +90,7 @@ void SettingsDragWidget::dropEvent(QDropEvent* e)
     QByteArray itemData = e->mimeData()->data("application/x-stats-settings-item");
     QDataStream dataStream(&itemData, QIODevice::ReadOnly);
 
-    StatisticType type;
+    StatType type;
     dataStream >> type;
 
     int insertIndex = 0;

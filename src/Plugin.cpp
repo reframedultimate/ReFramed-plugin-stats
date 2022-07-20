@@ -1,6 +1,12 @@
+#include "stats/config.hpp"
 #include "stats/PluginConfig.hpp"
 #include "stats/StatsPlugin.hpp"
+#include "stats/util/Paths.hpp"
 #include "rfcommon/PluginInterface.hpp"
+
+#if defined(STATS_ENABLE_LICENSING)
+#   include "stats/views/LicenseDialog.hpp"
+#endif
 
 // Gets called when the main application wants to create your plugin
 static rfcommon::Plugin* createStatsPlugin(RFPluginFactory* factory)
@@ -40,7 +46,42 @@ static int start(uint32_t version, const char** error)
     // any other number (-1) if otherwise. If you return non-zero, write an
     // error message to *error so the main application can tell the user what
     // went wrong.
+
+    if (ensureDataDirExists() == false)
+    {
+        *error = "Failed to create data directory";
+        return -1;
+    }
+
+#if defined(STATS_ENABLE_LICENSING)
+    QString licenseFileName = dataDir().absoluteFilePath("license.txt");
+    QFile licenseFile(licenseFileName);
+    if (licenseFile.exists())
+    {
+        licenseFile.open(QIODevice::ReadOnly);
+        QDataStream stream(&licenseFile);
+        QString result;
+        stream >> result;
+        if (result == STATS_LICENSED_TO)
+            return 0;
+        licenseFile.close();
+    }
+    
+    LicenseDialog dialog;
+    if (dialog.exec() == QDialog::Accepted)
+    {
+        licenseFile.open(QIODevice::WriteOnly);
+        QDataStream stream(&licenseFile);
+        stream << QString(STATS_LICENSED_TO);
+    }
+    else
+    {
+        *error = "License was rejected";
+        return -1;
+    }
+#else
     return 0;
+#endif
 }
 
 static void stop()

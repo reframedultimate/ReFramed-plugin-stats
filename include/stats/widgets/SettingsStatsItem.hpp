@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stats/models/StatisticType.hpp"
+#include "stats/StatType.hpp"
 #include <QLabel>
 
 class SettingsStatsItem : public QLabel
@@ -8,17 +8,17 @@ class SettingsStatsItem : public QLabel
     Q_OBJECT
 
 public:
-    explicit SettingsStatsItem(StatisticType type, QWidget* parent=nullptr);
+    explicit SettingsStatsItem(StatType type, QWidget* parent=nullptr);
 
-    StatisticType type() const
+    StatType type() const
         { return type_; }
 
     const char* typeAsString() const
-        { return statisticTypeToString(type_); }
+        { return statTypeToString(type_); }
 
     void setDragInProgress();
     void setDragCancelled();
 
 private:
-    const StatisticType type_;
+    const StatType type_;
 };

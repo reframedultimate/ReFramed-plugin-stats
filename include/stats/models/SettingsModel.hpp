@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rfcommon/ListenerDispatcher.hpp"
-#include "stats/models/StatisticType.hpp"
+#include "stats/StatType.hpp"
 
 #include <QString>
 
@@ -13,11 +13,11 @@ public:
     bool load(const char* filename);
     bool save(const char* filename);
 
-    void setStatEnabled(StatisticType type, bool enable);
-    bool statEnabled(StatisticType type) const;
+    void setStatEnabled(StatType type, bool enable);
+    bool statEnabled(StatType type) const;
 
-    void setStatAtIndex(int idx, StatisticType type);
-    StatisticType statAtIndex(int idx) const;
+    void setStatAtIndex(int idx, StatType type);
+    StatType statAtIndex(int idx) const;
 
     int numStatsEnabled() const;
 
@@ -35,13 +35,13 @@ public:
 private:
     bool statEnabled_[STAT_COUNT] = {
 #define X(type, str) true,
-        STATISTIC_TYPES_LIST
+        STAT_TYPES_LIST
 #undef X
     };
 
-    rfcommon::SmallVector<StatisticType, STAT_COUNT> statAtIndex_ = {
+    rfcommon::SmallVector<StatType, STAT_COUNT> statAtIndex_ = {
 #define X(type, str) STAT_##type,
-        STATISTIC_TYPES_LIST
+        STAT_TYPES_LIST
 #undef X
     };
 

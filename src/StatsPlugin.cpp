@@ -1,5 +1,5 @@
 #include "stats/StatsPlugin.hpp"
-#include "stats/models/StatsModel.hpp"
+#include "stats/models/StatsCalculator.hpp"
 #include "stats/models/SettingsModel.hpp"
 #include "stats/views/MainView.hpp"
 #include "rfcommon/RunningGameSession.hpp"
@@ -10,7 +10,7 @@
 // ----------------------------------------------------------------------------
 StatsPlugin::StatsPlugin(RFPluginFactory* factory)
     : RealtimePlugin(factory)
-    , statsModel_(new StatsModel)
+    , statsModel_(new StatsCalculator)
     , settingsModel_(new SettingsModel)
 {
 }

@@ -2,11 +2,11 @@
 
 #include <QWidget>
 
-class StatsModel;
+class StatsCalculator;
 class SettingsModel;
 
 class MainView : public QWidget
 {
 public:
-    explicit MainView(StatsModel* statsModel, SettingsModel* settingsModel, QWidget* parent=nullptr);
+    explicit MainView(StatsCalculator* statsModel, SettingsModel* settingsModel, QWidget* parent=nullptr);
 };

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "stats/models/StatisticType.hpp"
+#include "stats/StatType.hpp"
 #include <QWidget>
 
 class SettingsModel;
@@ -22,8 +22,8 @@ private slots:
     void onOBSCheckBoxToggled(bool enable);
     void onOBSInsertNewLinesCheckBoxToggled(bool enable);
     void onOBSBrowseFolderButtonReleased();
-    void onStatEnabled(int insertIndex, StatisticType type);
-    void onStatDisabled(int insertIndex, StatisticType type);
+    void onStatEnabled(int insertIndex, StatType type);
+    void onStatDisabled(int insertIndex, StatType type);
 
 private:
     Ui::SettingsView* ui_;
