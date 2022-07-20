@@ -21,6 +21,7 @@ public:
 private slots:
     void onOBSCheckBoxToggled(bool enable);
     void onOBSInsertNewLinesCheckBoxToggled(bool enable);
+    void onOBSSpinBoxNewLinesChanged(int value);
     void onOBSBrowseFolderButtonReleased();
     void onStatEnabled(int insertIndex, StatType type);
     void onStatDisabled(int insertIndex, StatType type);

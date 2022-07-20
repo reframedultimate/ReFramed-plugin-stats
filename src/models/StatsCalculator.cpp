@@ -3,6 +3,22 @@
 #include "rfcommon/Session.hpp"
 #include "rfcommon/PlayerState.hpp"
 
+// TODO Extract this info from the global mapping info structure, once
+// ReFramed's refactoring is done and this is possible.
+enum StatusKinds
+{
+    FIGHTER_STATUS_KIND_LANDING = 22,
+    FIGHTER_STATUS_KIND_PASSIVE = 103,
+    FIGHTER_STATUS_KIND_PASSIVE_FB = 104,
+    FIGHTER_STATUS_KIND_WAIT = 0,
+    FIGHTER_STATUS_KIND_GUARD_ON = 27,
+    FIGHTER_STATUS_KIND_JUMP_SQUAT = 10,
+    FIGHTER_STATUS_KIND_WALK = 1,
+    FIGHTER_STATUS_KIND_DASH = 3,
+    FIGHTER_STATUS_KIND_REBIRTH = 182,
+    FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY = 92
+};
+
 // ----------------------------------------------------------------------------
 StatsCalculator::StatsCalculator()
 {
@@ -50,6 +66,91 @@ void StatsCalculator::updateStatistics(const rfcommon::SmallVector<rfcommon::Pla
 }
 
 // ----------------------------------------------------------------------------
+double StatsCalculator::avgDamagePerOpening(int fighterIdx) const
+{
+    return 0.0;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::avgDeathPercent(int fighterIdx) const
+{
+    if (damagesAtDeath_[fighterIdx].count() == 0)
+        return 0.0;
+
+    double sum = 0.0;
+    for (double percent : damagesAtDeath_[fighterIdx])
+        sum += percent;
+    sum /= damagesAtDeath_[fighterIdx].count();
+    return sum;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::earliestDeathPercent(int fighterIdx) const
+{
+    if (damagesAtDeath_[fighterIdx].count() == 0)
+        return 0.0;
+
+    double low = std::numeric_limits<double>::max();
+    for (double percent : damagesAtDeath_[fighterIdx])
+        if (low > percent)
+            low = percent;
+    return low;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::latestDeathPercent(int fighterIdx) const
+{
+    if (damagesAtDeath_[fighterIdx].count() == 0)
+        return 0.0;
+
+    double high = 0.0;
+    for (double percent : damagesAtDeath_[fighterIdx])
+        if (high < percent)
+            high = percent;
+    return high;
+}
+
+// ----------------------------------------------------------------------------
+int StatsCalculator::numNeutralWins(int fighterIdx) const
+{
+    return 0.0;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::neutralWinPercent(int fighterIdx) const
+{
+    // playerpunishes / (playerpunishes + opponentpunishes)
+    return 0.0;
+}
+
+// ----------------------------------------------------------------------------
+int StatsCalculator::numOpeningsPerKill(int fighterIdx) const
+{
+    // round(playerpunishes / playerkillingpunishes, 2)
+    return 0;
+}
+
+// ----------------------------------------------------------------------------
+int StatsCalculator::numStocksTaken(int fighterIdx) const
+{
+    // playerkillingpunishes
+    return 0;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::stageControlPercent(int fighterIdx) const
+{
+    int totalStageControl = 0;
+    for (int stageControl : stageControl_)
+        totalStageControl += stageControl;
+
+    if (totalStageControl == 0)
+        return 0.0;
+
+    return static_cast<double>(stageControl_[fighterIdx]) * 100.0 / totalStageControl;
+}
+
+// ----------------------------------------------------------------------------
 void StatsCalculator::updateDamageTaken(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
 {
     for (int i = 0; i != states.count(); ++i)
@@ -86,7 +187,7 @@ void StatsCalculator::updateDamageTaken(const rfcommon::SmallVector<rfcommon::Pl
             }
 
             // Damage but accounting for heals
-            // if (states[i].damage() != oldDamage_[i] && states[i].status() != FIGHTER_STATUS_KIND_REBIRTH)  // Get this constant from session->mappingInfo()
+            // if (states[i].damage() != oldDamage_[i] && states[i].status() != FIGHTER_STATUS_KIND_REBIRTH)
             //     damageTaken_[i] += states[i].damage() - oldDamage_[i];
         }
 
@@ -104,7 +205,10 @@ void StatsCalculator::updateDamagesAtDeath(const rfcommon::SmallVector<rfcommon:
 
         // Store player damage at death
         if (states[i].stocks() < oldStocks_[i])
+        {
             damagesAtDeath_[i].push(states[i].damage());
+            oldStocks_[i] = states[i].stocks();
+        }
     }
 }
 
@@ -123,18 +227,22 @@ void StatsCalculator::updateFirstBlood(const rfcommon::SmallVector<rfcommon::Pla
 // ----------------------------------------------------------------------------
 static bool isTouchingGround(const rfcommon::PlayerState& state)
 {
-    // TODO
-    // if the status is any of the following then the player has landed
-    //   FIGHTER_STATUS_KIND_LANDING
-    //   FIGHTER_STATUS_KIND_PASSIVE
-    //   FIGHTER_STATUS_KIND_PASSIVE_FB
-    //   FIGHTER_STATUS_KIND_WAIT
-    //   FIGHTER_STATUS_KIND_GUARD_ON
-    //   FIGHTER_STATUS_KIND_JUMP_SQUAT
-    //   FIGHTER_STATUS_KIND_WALK
-    //   FIGHTER_STATUS_KIND_DASH
+    const rfcommon::FighterStatus landStates[] = {
+        FIGHTER_STATUS_KIND_LANDING,
+        FIGHTER_STATUS_KIND_PASSIVE,
+        FIGHTER_STATUS_KIND_PASSIVE_FB,
+        FIGHTER_STATUS_KIND_WAIT,
+        FIGHTER_STATUS_KIND_GUARD_ON,
+        FIGHTER_STATUS_KIND_JUMP_SQUAT,
+        FIGHTER_STATUS_KIND_WALK,
+        FIGHTER_STATUS_KIND_DASH
+    };
+    
+    for (int i = 0; i != sizeof(landStates) / sizeof(*landStates); ++i)
+        if (state.status() == landStates[i])
+            return true;
 
-    return true;
+    return false;
 }
 void StatsCalculator::updateStageControl(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
 {
@@ -151,7 +259,7 @@ void StatsCalculator::updateStageControl(const rfcommon::SmallVector<rfcommon::P
 
     // Figure out which player is in neutral and closest to stage center
     int playerInStageControl = -1;
-    double distanceToCenter = std::numeric_limits<double>::infinity();
+    double distanceToCenter = std::numeric_limits<double>::max();
     for (int i = 0; i != states.count(); ++i)
     {
         if (isInNeutralState_[i] && std::abs(states[i].posx()) < distanceToCenter)

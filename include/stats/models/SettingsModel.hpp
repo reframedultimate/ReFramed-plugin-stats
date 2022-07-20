@@ -4,14 +4,17 @@
 #include "stats/StatType.hpp"
 
 #include <QString>
+#include <QDir>
 
 class SettingsListener;
 
 class SettingsModel
 {
 public:
-    bool load(const char* filename);
-    bool save(const char* filename);
+    SettingsModel(const QString& settingsFile);
+
+    bool load();
+    bool save();
 
     void setStatEnabled(StatType type, bool enable);
     bool statEnabled(StatType type) const;
@@ -27,8 +30,8 @@ public:
     void setAdditionalNewlinesOBS(int lines);
     int additionalNewlinesOBS() const { return additionalNewlinesOBS_;  }
 
-    void setDestinationFolderOBS(const QString& dir);
-    const QString& destinationFolderOBS() const { return destinationFolderOBS_; }
+    void setDestinationFolderOBS(const QDir& dir);
+    const QDir& destinationFolderOBS() const { return destinationFolderOBS_; }
 
     rfcommon::ListenerDispatcher<SettingsListener> dispatcher;
 
@@ -45,7 +48,8 @@ private:
 #undef X
     };
 
+    QString settingsFile_;
+    QDir destinationFolderOBS_;
     bool exportToOBS_ = false;
     int additionalNewlinesOBS_ = 0;
-    QString destinationFolderOBS_;
 };

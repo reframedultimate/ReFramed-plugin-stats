@@ -1,5 +1,6 @@
 #pragma once
 
+#include "stats/listeners/SettingsListener.hpp"
 #include "rfcommon/RealtimePlugin.hpp"
 #include "rfcommon/SessionListener.hpp"
 #include "rfcommon/ListenerDispatcher.hpp"
@@ -13,7 +14,9 @@ namespace rfcommon {
 class StatsCalculator;
 class SettingsModel;
 
-class StatsPlugin : public rfcommon::RealtimePlugin, public rfcommon::SessionListener
+class StatsPlugin : public rfcommon::RealtimePlugin
+                  , public rfcommon::SessionListener
+                  , public SettingsListener
 {
 public:
     StatsPlugin(RFPluginFactory* factory);
@@ -34,6 +37,11 @@ public:
      */
     void destroyView(QWidget* view) override;
 
+private:
+    void exportEmptyStats() const;
+    void exportStats(const rfcommon::Session* session) const;
+
+private:
     // These get called by the main application when connecting/disconnecting
     // to the Nintendo Switch. Typically you don't really need these,
     // but it might be interesting to show the status of the connection somewhere.
@@ -51,10 +59,12 @@ public:
     void onProtocolMatchResumed(rfcommon::RunningGameSession* session) override;
     void onProtocolMatchEnded(rfcommon::RunningGameSession* session) override;
 
+private:
     // These get called when ReFramed loads/unloads a replay file
     void setSavedGameSession(rfcommon::SavedGameSession* session) override;
     void clearSavedGameSession(rfcommon::SavedGameSession* session) override {}
 
+private:
     // RunningGameSession events
     void onRunningGameSessionPlayerNameChanged(int playerIdx, const rfcommon::SmallString<15> & name) override {}
     void onRunningGameSessionSetNumberChanged(rfcommon::SetNumber number) override {}
@@ -69,7 +79,12 @@ public:
     void onRunningSessionNewFrame(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states) override {}
 
 private:
+    // The export code is implemented in these callbacks
+    void onSettingsStatTypesChanged() override;
+    void onSettingsOBSChanged() override;
+
+private:
     rfcommon::Reference<rfcommon::Session> session_;
-    std::unique_ptr<StatsCalculator> statsModel_;
+    std::unique_ptr<StatsCalculator> statsCalculator_;
     std::unique_ptr<SettingsModel> settingsModel_;
 };

@@ -29,15 +29,15 @@ public:
      */
     void updateStatistics(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states);
 
-    double avgDamagePerOpening(int fighterIdx) const { return 0.0; }
-    double avgKillPercent(int fighterIdx) const { return 0.0; }
-    double earliestKillPercent(int fighterIdx) const { return 0.0; }
-    double latestDeathPercent(int fighterIdx) const { return 0.0; }
-    int numNeutralWins(int fighterIdx) const { return 0; }
-    double neutralWinPercent(int fighterIdx) const { return 0.0; }
-    int numOpeningsPerKill(int fighterIdx) const { return 0; }
-    int numStocksTaken(int fighterIdx) const { return 0; }
-    double stageControlPercent(int fighterIdx) const { return 0.0; }
+    double avgDamagePerOpening(int fighterIdx) const;
+    double avgDeathPercent(int fighterIdx) const;
+    double earliestDeathPercent(int fighterIdx) const;
+    double latestDeathPercent(int fighterIdx) const;
+    int numNeutralWins(int fighterIdx) const;
+    double neutralWinPercent(int fighterIdx) const;
+    int numOpeningsPerKill(int fighterIdx) const;
+    int numStocksTaken(int fighterIdx) const;
+    double stageControlPercent(int fighterIdx) const;
 
     /*!
      * \brief Total amount of damage (percent) a player dealt.
