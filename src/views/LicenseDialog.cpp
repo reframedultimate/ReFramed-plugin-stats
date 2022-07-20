@@ -13,7 +13,7 @@ LicenseDialog::LicenseDialog(QWidget* parent)
     ui_->textBrowser_license->setText(
         "This version of the Statistics Plugin is intended for use only at \"" STATS_LICENSED_TO "\". Do not share this version of the Statistics Plugin without permission from Vye (Vye#0547) or TheComet (TheComet#5387).\n"
         "\n"
-        "Because a lot of features are still being worked developed on, the Statistics Plugin is not to be publicly released in its current form.");
+        "Because a lot of features are still being worked on, the Statistics Plugin is not to be publicly released in its current form.");
 #endif
 
     setWindowTitle("Statistics Plugin License Agreement");
