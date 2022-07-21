@@ -5,13 +5,14 @@
 
 class StatsCalculator;
 class SettingsModel;
+class UserLabelsModel;
 
 class QDir;
 
 class OBSExporter
 {
 public:
-    OBSExporter(const StatsCalculator* stats, const SettingsModel* settings);
+    OBSExporter(const StatsCalculator* stats, const SettingsModel* settings, const UserLabelsModel* labels);
     bool exportEmptyValues() const;
     bool exportStatistics() const;
 
@@ -29,6 +30,7 @@ private:
 private:
     const StatsCalculator* stats_;
     const SettingsModel* settings_;
+    const UserLabelsModel* labels_;
     QVector<QString> tags_;
     QVector<QString> chars_;
 };

@@ -13,6 +13,7 @@ namespace rfcommon {
 
 class StatsCalculator;
 class SettingsModel;
+class UserLabelsModel;
 
 class StatsPlugin : public rfcommon::RealtimePlugin
                   , public rfcommon::SessionListener
@@ -87,4 +88,5 @@ private:
     rfcommon::Reference<rfcommon::Session> session_;
     std::unique_ptr<StatsCalculator> statsCalculator_;
     std::unique_ptr<SettingsModel> settingsModel_;
+    std::unique_ptr<UserLabelsModel> motionLabels_;
 };

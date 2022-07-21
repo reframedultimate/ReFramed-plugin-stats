@@ -2,6 +2,7 @@
 #include "stats/exporters/OBSExporter.hpp"
 #include "stats/models/StatsCalculator.hpp"
 #include "stats/models/SettingsModel.hpp"
+#include "stats/models/UserLabelsModel.hpp"
 #include "stats/util/Paths.hpp"
 #include "stats/views/MainView.hpp"
 #include "rfcommon/RunningGameSession.hpp"
@@ -14,7 +15,14 @@ StatsPlugin::StatsPlugin(RFPluginFactory* factory)
     : RealtimePlugin(factory)
     , statsCalculator_(new StatsCalculator)
     , settingsModel_(new SettingsModel(dataDir().absoluteFilePath("settings.json")))
+    , motionLabels_(new UserLabelsModel)
 {
+#if defined(_WIN32)
+    motionLabels_->loadMotionLabels("share\\reframed\\data\\plugin-stats\\ParamLabels.csv");
+#else
+    motionLabels_->loadMotionLabels("share/reframed/data/plugin-stats/ParamLabels.csv");
+#endif
+
     settingsModel_->dispatcher.addListener(this);
 }
 
@@ -32,7 +40,7 @@ QWidget* StatsPlugin::createView()
 {
     // Create new instance of view. The view registers as a listener to this model
     //return new StatsView(model_.get());
-    return new MainView(statsCalculator_.get(), settingsModel_.get());
+    return new MainView(statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
 }
 
 // ----------------------------------------------------------------------------
@@ -47,7 +55,7 @@ void StatsPlugin::exportEmptyStats() const
 {
     if (settingsModel_->exportToOBS())
     {
-        OBSExporter exporter(statsCalculator_.get(), settingsModel_.get());
+        OBSExporter exporter(statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
         if (session_)
         {
             const rfcommon::FighterIDMapping& fighterIDs = session_->mappingInfo().fighterID;
@@ -77,7 +85,7 @@ void StatsPlugin::exportStats(const rfcommon::Session* session) const
         const rfcommon::String* p1Fighter = fighterIDs.map(p1FighterID);
         const rfcommon::String* p2Fighter = fighterIDs.map(p2FighterID);
 
-        OBSExporter exporter(statsCalculator_.get(), settingsModel_.get());
+        OBSExporter exporter(statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
         exporter.setPlayerTag(0, session->playerTag(0).cStr());
         exporter.setPlayerTag(1, session->playerTag(1).cStr());
         exporter.setPlayerCharacter(0, p1Fighter ? p1Fighter->cStr() : "--");

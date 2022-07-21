@@ -12,6 +12,7 @@ namespace Ui {
 class QGridLayout;
 class StatsCalculator;
 class SettingsModel;
+class UserLabelsModel;
 
 class StatsView : public QWidget
                 , public StatsCalculatorListener
@@ -20,7 +21,7 @@ class StatsView : public QWidget
     Q_OBJECT
 
 public:
-    explicit StatsView(StatsCalculator* stats, SettingsModel* settings, QWidget* parent=nullptr);
+    explicit StatsView(StatsCalculator* stats, SettingsModel* settings, UserLabelsModel* labels, QWidget* parent=nullptr);
     ~StatsView();
 
 private:
@@ -39,6 +40,8 @@ private:
 
     // We also listen to changes to the settings
     SettingsModel* settings_;
+
+    UserLabelsModel* labels_;
 
     // Holds all of the statistic lables
     QGridLayout* layout_;

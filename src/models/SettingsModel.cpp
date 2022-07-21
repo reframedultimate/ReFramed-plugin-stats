@@ -61,6 +61,8 @@ bool SettingsModel::load()
             statAtIndex_.push(static_cast<StatType>(i));
         }
     }
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------

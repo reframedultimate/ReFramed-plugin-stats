@@ -20,6 +20,27 @@ enum StatusKinds
 };
 
 // ----------------------------------------------------------------------------
+static bool isTouchingGround(const rfcommon::PlayerState& state)
+{
+    const rfcommon::FighterStatus landStates[] = {
+        FIGHTER_STATUS_KIND_LANDING,
+        FIGHTER_STATUS_KIND_PASSIVE,
+        FIGHTER_STATUS_KIND_PASSIVE_FB,
+        FIGHTER_STATUS_KIND_WAIT,
+        FIGHTER_STATUS_KIND_GUARD_ON,
+        FIGHTER_STATUS_KIND_JUMP_SQUAT,
+        FIGHTER_STATUS_KIND_WALK,
+        FIGHTER_STATUS_KIND_DASH
+    };
+
+    for (int i = 0; i != sizeof(landStates) / sizeof(*landStates); ++i)
+        if (state.status() == landStates[i])
+            return true;
+
+    return false;
+}
+
+// ----------------------------------------------------------------------------
 StatsCalculator::StatsCalculator()
 {
     StatsCalculator::resetStatistics();
@@ -28,24 +49,11 @@ StatsCalculator::StatsCalculator()
 // ----------------------------------------------------------------------------
 void StatsCalculator::resetStatistics()
 {
-    for (int i = 0; i != MAX_FIGHTERS; ++i)
-    {
-        // Reset damage counters
-        totalDamageTaken_[i] = 0.0;
-        totalDamageDealt_[i] = 0.0;
-        oldDamage_[i] = 0.0;
-
-        // Reset stock counters
-        oldStocks_[i] = 0;
-        damagesAtDeath_[i].clearCompact();
-
-        // Reset first blood
-        firstBloodFighterIdx_ = -1;
-
-        // Reset stage control counters
-        stageControl_[i] = 0;
-        isInNeutralState_[i] = 0;
-    }
+    damageCounters.reset();
+    damagesAtDeath.reset();
+    firstBlood.reset();
+    stageControl.reset();
+    stringFinder.reset();
 
     dispatcher.dispatch(&StatsCalculatorListener::onStatsUpdated);
 }
@@ -57,101 +65,26 @@ void StatsCalculator::updateStatistics(const rfcommon::SmallVector<rfcommon::Pla
     if (states.count() != 2)
         return;
 
-    updateDamageTaken(states);
-    updateDamagesAtDeath(states);
-    updateFirstBlood(states);
-    updateStageControl(states);
+    damageCounters.update(states);
+    damagesAtDeath.update(states);
+    firstBlood.update(states);
+    stageControl.update(states);
+    stringFinder.update(states);
 
     dispatcher.dispatch(&StatsCalculatorListener::onStatsUpdated);
 }
 
 // ----------------------------------------------------------------------------
-double StatsCalculator::avgDamagePerOpening(int fighterIdx) const
+void StatsCalculator::DamageCounters::reset()
 {
-    return 0.0;
+    for (int i = 0; i != MAX_FIGHTERS; ++i)
+    {
+        totalDamageTaken[i] = 0.0;
+        totalDamageDealt[i] = 0.0;
+        oldDamage_[i] = 0.0;
+    }
 }
-
-// ----------------------------------------------------------------------------
-double StatsCalculator::avgDeathPercent(int fighterIdx) const
-{
-    if (damagesAtDeath_[fighterIdx].count() == 0)
-        return 0.0;
-
-    double sum = 0.0;
-    for (double percent : damagesAtDeath_[fighterIdx])
-        sum += percent;
-    sum /= damagesAtDeath_[fighterIdx].count();
-    return sum;
-}
-
-// ----------------------------------------------------------------------------
-double StatsCalculator::earliestDeathPercent(int fighterIdx) const
-{
-    if (damagesAtDeath_[fighterIdx].count() == 0)
-        return 0.0;
-
-    double low = std::numeric_limits<double>::max();
-    for (double percent : damagesAtDeath_[fighterIdx])
-        if (low > percent)
-            low = percent;
-    return low;
-}
-
-// ----------------------------------------------------------------------------
-double StatsCalculator::latestDeathPercent(int fighterIdx) const
-{
-    if (damagesAtDeath_[fighterIdx].count() == 0)
-        return 0.0;
-
-    double high = 0.0;
-    for (double percent : damagesAtDeath_[fighterIdx])
-        if (high < percent)
-            high = percent;
-    return high;
-}
-
-// ----------------------------------------------------------------------------
-int StatsCalculator::numNeutralWins(int fighterIdx) const
-{
-    return 0.0;
-}
-
-// ----------------------------------------------------------------------------
-double StatsCalculator::neutralWinPercent(int fighterIdx) const
-{
-    // playerpunishes / (playerpunishes + opponentpunishes)
-    return 0.0;
-}
-
-// ----------------------------------------------------------------------------
-int StatsCalculator::numOpeningsPerKill(int fighterIdx) const
-{
-    // round(playerpunishes / playerkillingpunishes, 2)
-    return 0;
-}
-
-// ----------------------------------------------------------------------------
-int StatsCalculator::numStocksTaken(int fighterIdx) const
-{
-    // playerkillingpunishes
-    return 0;
-}
-
-// ----------------------------------------------------------------------------
-double StatsCalculator::stageControlPercent(int fighterIdx) const
-{
-    int totalStageControl = 0;
-    for (int stageControl : stageControl_)
-        totalStageControl += stageControl;
-
-    if (totalStageControl == 0)
-        return 0.0;
-
-    return static_cast<double>(stageControl_[fighterIdx]) * 100.0 / totalStageControl;
-}
-
-// ----------------------------------------------------------------------------
-void StatsCalculator::updateDamageTaken(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::DamageCounters::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
 {
     for (int i = 0; i != states.count(); ++i)
     {
@@ -162,7 +95,7 @@ void StatsCalculator::updateDamageTaken(const rfcommon::SmallVector<rfcommon::Pl
         // when a player heals or respawns.
         if (deltaDamage > 0.0)
         {
-            totalDamageTaken_[i] += deltaDamage;
+            totalDamageTaken[i] += deltaDamage;
 
             // Figure out which player dealt the damage. If there are more than 2 
             // players we have to rely on attackConnected().
@@ -176,13 +109,13 @@ void StatsCalculator::updateDamageTaken(const rfcommon::SmallVector<rfcommon::Pl
                 if (states.count() == 2)  // Is 1v1
                 {
                     // This ignores self damage but it's close enough
-                    totalDamageDealt_[j] += deltaDamage;
+                    totalDamageDealt[j] += deltaDamage;
                 }
                 else
                 {
                     // This ignores projectile damage
                     if (states[j].attackConnected())
-                        totalDamageDealt_[j] += deltaDamage;
+                        totalDamageDealt[j] += deltaDamage;
                 }
             }
 
@@ -190,12 +123,19 @@ void StatsCalculator::updateDamageTaken(const rfcommon::SmallVector<rfcommon::Pl
             // if (states[i].damage() != oldDamage_[i] && states[i].status() != FIGHTER_STATUS_KIND_REBIRTH)
             //     damageTaken_[i] += states[i].damage() - oldDamage_[i];
         }
-
     }
 }
 
 // ----------------------------------------------------------------------------
-void StatsCalculator::updateDamagesAtDeath(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::DamagesAtDeath::reset()
+{
+    for (int i = 0; i != MAX_FIGHTERS; ++i)
+    {
+        oldStocks_[i] = 0;
+        damagesAtDeath[i].clearCompact();
+    }
+}
+void StatsCalculator::DamagesAtDeath::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
 {
     for (int i = 0; i != states.count(); ++i)
     {
@@ -206,56 +146,59 @@ void StatsCalculator::updateDamagesAtDeath(const rfcommon::SmallVector<rfcommon:
         // Store player damage at death
         if (states[i].stocks() < oldStocks_[i])
         {
-            damagesAtDeath_[i].push(states[i].damage());
+            damagesAtDeath[i].push(states[i].damage());
             oldStocks_[i] = states[i].stocks();
         }
     }
 }
 
 // ----------------------------------------------------------------------------
-void StatsCalculator::updateFirstBlood(const rfcommon::SmallVector<rfcommon::PlayerState, 8> & states)
+void StatsCalculator::FirstBlood::reset()
 {
-    if (firstBloodFighterIdx_ == -1)
+    firstBloodFighterIdx = -1;
+}
+void StatsCalculator::FirstBlood::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8> & states)
+{
+    if (firstBloodFighterIdx == -1)
     {
         if (states[0].stocks() > states[1].stocks())
-            firstBloodFighterIdx_ = 0;
+            firstBloodFighterIdx = 0;
         if (states[0].stocks() < states[1].stocks())
-            firstBloodFighterIdx_ = 1;
+            firstBloodFighterIdx = 1;
     }
 }
 
 // ----------------------------------------------------------------------------
-static bool isTouchingGround(const rfcommon::PlayerState& state)
+void StatsCalculator::StageControl::reset()
 {
-    const rfcommon::FighterStatus landStates[] = {
-        FIGHTER_STATUS_KIND_LANDING,
-        FIGHTER_STATUS_KIND_PASSIVE,
-        FIGHTER_STATUS_KIND_PASSIVE_FB,
-        FIGHTER_STATUS_KIND_WAIT,
-        FIGHTER_STATUS_KIND_GUARD_ON,
-        FIGHTER_STATUS_KIND_JUMP_SQUAT,
-        FIGHTER_STATUS_KIND_WALK,
-        FIGHTER_STATUS_KIND_DASH
-    };
-    
-    for (int i = 0; i != sizeof(landStates) / sizeof(*landStates); ++i)
-        if (state.status() == landStates[i])
-            return true;
-
-    return false;
+    for (int i = 0; i != MAX_FIGHTERS; ++i)
+    {
+        isInNeutralState_[i] = 1;
+        neutralStateResetCounter_[i] = 0;
+        stageControl[i] = 0;
+    }
 }
-void StatsCalculator::updateStageControl(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::StageControl::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8> & states)
 {
     // Got hit? No longer in neutral state
     for (int i = 0; i != states.count(); ++i)
-        if (states[i].hitstun() > 0.0)
+        if (states[i].hitstun() > 0.0 || states[i].status() == FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY)
+        {
             isInNeutralState_[i] = 0;
+            neutralStateResetCounter_[i] = 45;  // Some arbitrary value to make sure we don't reset
+                                                // back to neutral state too early
+        }
 
     // If player is no longer in hitstun and touches the ground, we put them back
     // into neutral state
     for (int i = 0; i != states.count(); ++i)
         if (states[i].hitstun() == 0.0 && isTouchingGround(states[i]))
-            isInNeutralState_[i] = 1;
+        {
+            if (neutralStateResetCounter_[i] > 0)
+                neutralStateResetCounter_[i]--;
+            else
+                isInNeutralState_[i] = 1;
+        }
 
     // Figure out which player is in neutral and closest to stage center
     int playerInStageControl = -1;
@@ -269,6 +212,292 @@ void StatsCalculator::updateStageControl(const rfcommon::SmallVector<rfcommon::P
         }
     }
 
+    // Accumulate
     if (playerInStageControl > -1)
-        stageControl_[playerInStageControl]++;
+        stageControl[playerInStageControl]++;
+}
+
+// ----------------------------------------------------------------------------
+void StatsCalculator::StringFinder::reset()
+{
+    for (int i = 0; i != MAX_FIGHTERS; ++i)
+    {
+        strings[i].clearCompact();
+        oldStatus_[i] = 0;
+        oldHitstun_[i] = 0.0;
+        oldStocks_[i] = 0;
+        isInNeutralState_[i] = 1;
+        neutralStateResetCounter_[i] = 0;
+        beingCombodByIdx_[i] = -1;
+        opponentDamageAtOpening_[i] = 0.0;
+    }
+}
+void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8> & states)
+{
+    // To make things a little clearer, we are looking at this from the
+    // perspective of the player dealing the damage ("me"). The player 
+    // getting combo'd is "them"
+    for (int them = 0; them != states.count(); ++them)
+    {
+        // Detect if a move hit by seeing if the damage increased, and if the player enters
+        // hitstun. The player can receive damage from the blastzone, this is why we check
+        // hitstun as well.
+        if ((states[them].damage() > oldDamage_[them] && states[them].hitstun() > oldHitstun_[them]) || 
+            (states[them].status() == FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY && oldStatus_[them] != FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY))
+        {
+            // This is the first time they got hit in neutral. We set up some counters so we can
+            // follow the string and see how much damage it does/whether it kills
+            if (isInNeutralState_[them])
+            {
+                // Figure out which player started the combo. 
+                // XXX: Currently we only support 1v1
+                if (states.count() != 2)
+                    return;
+                int me = beingCombodByIdx_[them] = 1 - them;  // Simply the other player
+
+                strings[me].push({});
+
+                // Store the opening move that started the combo
+                strings[me].back().moves.push(states[me].motion());
+                strings[me].back().damage = states[them].damage() - oldDamage_[them];
+
+                // Start a new damage counter for this string
+                opponentDamageAtOpening_[me] = oldDamage_[them];  // Store damage before the hit
+            }
+            // The string is being continued
+            else
+            {
+                assert(beingCombodByIdx_[them] >= 0);
+                int me = beingCombodByIdx_[them];
+
+                // Add move to list
+                strings[me].back().moves.push(states[me].motion());
+                strings[me].back().damage = states[them].damage() - opponentDamageAtOpening_[me];
+            }
+
+            isInNeutralState_[them] = 0;
+            neutralStateResetCounter_[them] = 45;  // Some arbitrary value to make sure we don't reset
+                                                   // back to neutral state too early
+        }
+    }
+
+    // If the player dies, mark that the string killed
+    for (int i = 0; i != states.count(); ++i)
+    {
+        if (beingCombodByIdx_[i] > -1 && 0 /*states[i].status() == FIGHTER_STATUS_KIND_DEATH && oldStates_[i] != FIGHTER_STATUS_KIND_DEATH*/)
+        {
+            int me = beingCombodByIdx_[i];
+            strings[me].back().damage = opponentDamageAtOpening_[me] - states[i].damage();
+            strings[me].back().killed = true;
+            beingCombodByIdx_[i] = -1;
+        }
+    }
+
+    // If player is no longer in hitstun and touches the ground, we put them back
+    // into neutral state
+    for (int i = 0; i != states.count(); ++i)
+        if (states[i].hitstun() == 0.0 && isTouchingGround(states[i]))
+        {
+            if (neutralStateResetCounter_[i] > 0)
+                neutralStateResetCounter_[i]--;
+            else
+            {
+                isInNeutralState_[i] = 1;
+                beingCombodByIdx_[i] = -1;
+            }
+        }
+
+    // Have to update old vars
+    for (int i = 0; i != states.count(); ++i)
+    {
+        oldHitstun_[i] = states[i].hitstun();
+        oldDamage_[i] = states[i].damage();
+        oldStatus_[i] = states[i].status();
+    }
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::avgDeathPercent(int fighterIdx) const
+{
+    if (damagesAtDeath.damagesAtDeath[fighterIdx].count() == 0)
+        return 0.0;
+
+    double sum = 0.0;
+    for (double percent : damagesAtDeath.damagesAtDeath[fighterIdx])
+        sum += percent;
+    sum /= damagesAtDeath.damagesAtDeath[fighterIdx].count();
+    return sum;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::earliestDeathPercent(int fighterIdx) const
+{
+    if (damagesAtDeath.damagesAtDeath[fighterIdx].count() == 0)
+        return 0.0;
+
+    double low = std::numeric_limits<double>::max();
+    for (double percent : damagesAtDeath.damagesAtDeath[fighterIdx])
+        if (low > percent)
+            low = percent;
+    return low;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::latestDeathPercent(int fighterIdx) const
+{
+    if (damagesAtDeath.damagesAtDeath[fighterIdx].count() == 0)
+        return 0.0;
+
+    double high = 0.0;
+    for (double percent : damagesAtDeath.damagesAtDeath[fighterIdx])
+        if (high < percent)
+            high = percent;
+    return high;
+}
+
+// ----------------------------------------------------------------------------
+int StatsCalculator::numNeutralWins(int fighterIdx) const
+{
+    return stringFinder.strings[fighterIdx].count();
+}
+
+// ----------------------------------------------------------------------------
+int StatsCalculator::numNeutralLosses(int fighterIdx) const
+{
+    if (fighterIdx > 1)  // Only support 1v1 for now
+        return 0;
+
+    const int opponentIdx = 1 - fighterIdx;
+    return stringFinder.strings[opponentIdx].count();
+}
+
+// ----------------------------------------------------------------------------
+int StatsCalculator::numNonKillingNeutralWins(int fighterIdx) const
+{
+    int count = 0;
+    for (const auto& string : stringFinder.strings[fighterIdx])
+        if (string.killed == false)
+            count++;
+    return count;
+}
+
+// ----------------------------------------------------------------------------
+int StatsCalculator::numStocksTaken(int fighterIdx) const
+{
+    int count = 0;
+    for (const auto& string : stringFinder.strings[fighterIdx])
+        if (string.killed)
+            count++;
+    return count;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::neutralWinPercent(int fighterIdx) const
+{
+    const double wins = static_cast<double>(numNeutralWins(fighterIdx));
+    const double losses = static_cast<double>(numNeutralLosses(fighterIdx));
+
+    if (wins + losses == 0.0)
+        return 0.0;
+
+    return wins / (wins + losses) * 100.0;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::avgDamagePerOpening(int fighterIdx) const
+{
+    const int neutralWins = numNeutralWins(fighterIdx);
+    if (neutralWins == 0)
+        return 0.0;
+    return totalDamageDealt(fighterIdx) / numNeutralWins(fighterIdx);
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::openingsPerKill(int fighterIdx) const
+{
+    return static_cast<double>(numNonKillingNeutralWins(fighterIdx)) / numStocksTaken(fighterIdx);
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::stageControlPercent(int fighterIdx) const
+{
+    int totalStageControl = 0;
+    for (int stageControl : stageControl.stageControl)
+        totalStageControl += stageControl;
+
+    if (totalStageControl == 0)
+        return 0.0;
+
+    return static_cast<double>(stageControl.stageControl[fighterIdx]) * 100.0 / totalStageControl;
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::totalDamageDealt(int fighterIdx) const
+{
+    return damageCounters.totalDamageDealt[fighterIdx];
+}
+
+// ----------------------------------------------------------------------------
+double StatsCalculator::totalDamageTaken(int fighterIdx) const
+{
+    return damageCounters.totalDamageTaken[fighterIdx];
+}
+
+// ----------------------------------------------------------------------------
+rfcommon::FighterMotion StatsCalculator::mostCommonNeutralOpeningMove(int fighterIdx) const
+{
+    rfcommon::SmallLinearMap<rfcommon::FighterMotion, int, 8> candidates;
+    for (const auto& string : stringFinder.strings[fighterIdx])
+        candidates.insertOrGet(string.moves.front(), 0)->value()++;
+
+    rfcommon::FighterMotion mostUsed = 0;
+    int timesUsed = 0;
+    for (auto candidate : candidates)
+        if (timesUsed < candidate.value())
+        {
+            timesUsed = candidate.value();
+            mostUsed = candidate.key();
+        }
+
+    return mostUsed;
+}
+
+// ----------------------------------------------------------------------------
+rfcommon::FighterMotion StatsCalculator::mostCommonKillMove(int fighterIdx) const
+{
+    rfcommon::SmallLinearMap<rfcommon::FighterMotion, int, 8> candidates;
+    for (const auto& string : stringFinder.strings[fighterIdx])
+        if (string.killed)
+            candidates.insertOrGet(string.moves.back(), 0)->value()++;
+
+    rfcommon::FighterMotion mostUsed = 0;
+    int timesUsed = 0;
+    for (auto candidate : candidates)
+        if (timesUsed < candidate.value())
+        {
+            timesUsed = candidate.value();
+            mostUsed = candidate.key();
+        }
+
+    return mostUsed;
+}
+
+// ----------------------------------------------------------------------------
+rfcommon::FighterMotion StatsCalculator::mostCommonNeutralOpenerIntoKillMove(int fighterIdx) const
+{
+    rfcommon::SmallLinearMap<rfcommon::FighterMotion, int, 8> candidates;
+    for (const auto& string : stringFinder.strings[fighterIdx])
+        if (string.killed)
+            candidates.insertOrGet(string.moves.front(), 0)->value()++;
+
+    rfcommon::FighterMotion mostUsed = 0;
+    int timesUsed = 0;
+    for (auto candidate : candidates)
+        if (timesUsed < candidate.value())
+        {
+            timesUsed = candidate.value();
+            mostUsed = candidate.key();
+        }
+
+    return mostUsed;
 }

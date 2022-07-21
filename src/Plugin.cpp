@@ -79,9 +79,9 @@ static int start(uint32_t version, const char** error)
         *error = "License was rejected";
         return -1;
     }
-#else
-    return 0;
 #endif
+
+    return 0;
 }
 
 static void stop()

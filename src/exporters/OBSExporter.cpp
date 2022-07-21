@@ -3,9 +3,10 @@
 #include "stats/util/StatsFormatter.hpp"
 
 // ----------------------------------------------------------------------------
-OBSExporter::OBSExporter(const StatsCalculator* stats, const SettingsModel* settings)
+OBSExporter::OBSExporter(const StatsCalculator* stats, const SettingsModel* settings, const UserLabelsModel* labels)
     : stats_(stats)
     , settings_(settings)
+    , labels_(labels)
 {
 }
 
@@ -137,7 +138,7 @@ bool OBSExporter::writePlayerStats() const
     if (p2stats.open(QIODevice::WriteOnly) == false)
         return false;
 
-    StatsFormatter formatter(stats_);
+    StatsFormatter formatter(stats_, labels_);
     for (int i = 0; i != settings_->numStatsEnabled(); ++i)
     {
         // Additional newlines
