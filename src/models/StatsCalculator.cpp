@@ -3,6 +3,8 @@
 #include "rfcommon/Session.hpp"
 #include "rfcommon/PlayerState.hpp"
 
+#include <QDebug>
+
 // TODO Extract this info from the global mapping info structure, once
 // ReFramed's refactoring is done and this is possible.
 enum StatusKinds
@@ -16,7 +18,8 @@ enum StatusKinds
     FIGHTER_STATUS_KIND_WALK = 1,
     FIGHTER_STATUS_KIND_DASH = 3,
     FIGHTER_STATUS_KIND_REBIRTH = 182,
-    FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY = 92
+    FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY = 92,
+    FIGHTER_STATUS_KIND_DEAD = 181
 };
 
 // ----------------------------------------------------------------------------
@@ -242,7 +245,7 @@ void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon:
         // Detect if a move hit by seeing if the damage increased, and if the player enters
         // hitstun. The player can receive damage from the blastzone, this is why we check
         // hitstun as well.
-        if ((states[them].damage() > oldDamage_[them] && states[them].hitstun() > oldHitstun_[them]) || 
+        if ((states[them].hitstun() > oldHitstun_[them]) || 
             (states[them].status() == FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY && oldStatus_[them] != FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY))
         {
             // This is the first time they got hit in neutral. We set up some counters so we can
@@ -265,9 +268,8 @@ void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon:
                 opponentDamageAtOpening_[me] = oldDamage_[them];  // Store damage before the hit
             }
             // The string is being continued
-            else
+            else if (beingCombodByIdx_[them] >= 0)
             {
-                assert(beingCombodByIdx_[them] >= 0);
                 int me = beingCombodByIdx_[them];
 
                 // Add move to list
@@ -284,12 +286,14 @@ void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon:
     // If the player dies, mark that the string killed
     for (int i = 0; i != states.count(); ++i)
     {
-        if (beingCombodByIdx_[i] > -1 && 0 /*states[i].status() == FIGHTER_STATUS_KIND_DEATH && oldStates_[i] != FIGHTER_STATUS_KIND_DEATH*/)
+        if (beingCombodByIdx_[i] > -1 && states[i].status() == FIGHTER_STATUS_KIND_DEAD && oldStatus_[i] != FIGHTER_STATUS_KIND_DEAD)
         {
             int me = beingCombodByIdx_[i];
             strings[me].back().damage = opponentDamageAtOpening_[me] - states[i].damage();
             strings[me].back().killed = true;
             beingCombodByIdx_[i] = -1;
+            neutralStateResetCounter_[i] = 0;
+            isInNeutralState_[i] = 1;
         }
     }
 
@@ -299,11 +303,13 @@ void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon:
         if (states[i].hitstun() == 0.0 && isTouchingGround(states[i]))
         {
             if (neutralStateResetCounter_[i] > 0)
-                neutralStateResetCounter_[i]--;
-            else
             {
-                isInNeutralState_[i] = 1;
-                beingCombodByIdx_[i] = -1;
+                neutralStateResetCounter_[i]--;
+                if (neutralStateResetCounter_[i] == 0)
+                {
+                    isInNeutralState_[i] = 1;
+                    beingCombodByIdx_[i] = -1;
+                }
             }
         }
 
@@ -415,7 +421,10 @@ double StatsCalculator::avgDamagePerOpening(int fighterIdx) const
 // ----------------------------------------------------------------------------
 double StatsCalculator::openingsPerKill(int fighterIdx) const
 {
-    return static_cast<double>(numNonKillingNeutralWins(fighterIdx)) / numStocksTaken(fighterIdx);
+    const int stocksTaken = numStocksTaken(fighterIdx);
+    if (stocksTaken == 0)
+        return 0.0;
+    return static_cast<double>(numNeutralWins(fighterIdx)) / stocksTaken;
 }
 
 // ----------------------------------------------------------------------------

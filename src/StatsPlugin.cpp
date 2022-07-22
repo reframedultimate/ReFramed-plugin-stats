@@ -121,7 +121,7 @@ void StatsPlugin::onProtocolMatchResumed(rfcommon::RunningGameSession* session)
 
     // If the session already has frames, process them so we are caught up
     statsCalculator_->resetStatistics();
-    session_->replayUniqueFrameEvents(this);
+    session_->replayUniqueFrameEvents(this);  // XXX: This won't work, we require every frame because of counters
 
     exportEmptyStats();
 }
@@ -140,13 +140,13 @@ void StatsPlugin::onProtocolMatchEnded(rfcommon::RunningGameSession* session)
 void StatsPlugin::setSavedGameSession(rfcommon::SavedGameSession* session)
 {
     statsCalculator_->resetStatistics();
-    session->replayUniqueFrameEvents(this);
+    session->replayUniqueFrameEvents(this);  // XXX: This won't work, we require every frame because of counters
 
     exportStats(session);
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::onRunningSessionNewUniqueFrame(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsPlugin::onRunningSessionNewFrame(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
 {
     statsCalculator_->updateStatistics(states);
 }

@@ -30,7 +30,7 @@ SettingsView::SettingsView(SettingsModel* model, QWidget* parent)
     }
 
     ui_->checkBox_obsExport->setChecked(settings_->exportToOBS());
-    ui_->label_obsDestFolder->setEnabled(settings_->exportToOBS());
+    ui_->lineEdit_obsDestFolder->setEnabled(settings_->exportToOBS());
     ui_->toolButton_obsBrowseFolder->setEnabled(settings_->exportToOBS());
     ui_->checkBox_obsInsertNewlines->setEnabled(settings_->exportToOBS());
     ui_->spinBox_obsNewlines->setEnabled(settings_->exportToOBS() && settings_->additionalNewlinesOBS() > 0);
