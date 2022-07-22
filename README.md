@@ -77,6 +77,11 @@ We have to tell CMake where it can find the build version of ReFramed:
 set ReFramed_DIR=C:\ReFramed-debug-master
 ```
 
+Generate a solution
+```
+cmake -A x64 -DCMAKE_CXX_FLAGS="/MP" ..\
+```
+
 Now you can build the plugin:
 ```
 cmake --build . --config Debug
