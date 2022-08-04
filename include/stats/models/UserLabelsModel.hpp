@@ -1,10 +1,10 @@
 #pragma once
 
 #include "stats/models/UserLabelCategory.hpp"
-#include "rfcommon/Types.hpp"
-#include "rfcommon/Vector.hpp"
-#include "rfcommon/String.hpp"
+#include "rfcommon/FighterMotion.hpp"
 #include "rfcommon/HashMap.hpp"
+#include "rfcommon/String.hpp"
+#include "rfcommon/Vector.hpp"
 
 class MotionLabels
 {

@@ -30,21 +30,21 @@ QString StatsFormatter::playerStatAsString(int fighterIdx, StatType type) const
     case STAT_TOTAL_DAMAGE_RECEIVED: return QString::number(stats_->totalDamageTaken(fighterIdx), 'f', 1) + "%";
     case STAT_MOST_COMMON_NEUTRAL_OPENING_MOVE: {
         const rfcommon::FighterMotion motion = stats_->mostCommonNeutralOpeningMove(fighterIdx);
-        if (motion == 0)
+        if (motion.isValid() == false)
             return QString("None");
         const char* label = labels_->motionToLabel(motion);
         return label ? QString(label) : QString("(unknown move)");
     } break;
     case STAT_MOST_COMMON_KILL_MOVE: {
         const rfcommon::FighterMotion motion = stats_->mostCommonKillMove(fighterIdx);
-        if (motion == 0)
+        if (motion.isValid() == false)
             return QString("None");
         const char* label = labels_->motionToLabel(motion);
         return label ? QString(label) : QString("(unknown move)");
     } break;
     case STAT_MOST_COMMON_NEUTRAL_OPENING_MOVE_INTO_KILL: {
         const rfcommon::FighterMotion motion = stats_->mostCommonNeutralOpenerIntoKillMove(fighterIdx);
-        if (motion == 0)
+        if (motion.isValid() == false)
             return QString("None");
         const char* label = labels_->motionToLabel(motion);
         return label ? QString(label) : QString("(unknown move)");

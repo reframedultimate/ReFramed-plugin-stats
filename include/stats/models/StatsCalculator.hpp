@@ -1,12 +1,14 @@
 #pragma once
 
 #include "rfcommon/ListenerDispatcher.hpp"
+#include "rfcommon/FighterMotion.hpp"
+#include "rfcommon/FighterStatus.hpp"
 #include "rfcommon/Vector.hpp"
-#include "rfcommon/Types.hpp"
 
 namespace rfcommon {
     class Session;
-    class PlayerState;
+    class FighterState;
+    template <int N> class Frame;
 }
 
 class StatsCalculatorListener;
@@ -28,7 +30,7 @@ public:
      * \brief Incrementally updates all of the statistics from a single
      * frame of data.
      */
-    void updateStatistics(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states);
+    void updateStatistics(const rfcommon::Frame<4>& frame);
 
     double avgDeathPercent(int fighterIdx) const;
     double earliestDeathPercent(int fighterIdx) const;
@@ -69,7 +71,7 @@ private:
     // Variables for tracking damage taken/dealt
     struct DamageCounters {
         void reset();
-        void update(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states);
+        void update(const rfcommon::Frame<4>& frame);
 
         double totalDamageTaken[MAX_FIGHTERS];
         double totalDamageDealt[MAX_FIGHTERS];
@@ -79,7 +81,7 @@ private:
     // Variables for tracking at what percents players die at
     struct DamagesAtDeath {
         void reset();
-        void update(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states);
+        void update(const rfcommon::Frame<4>& frame);
 
         int oldStocks_[MAX_FIGHTERS];
         rfcommon::SmallVector<double, 4> damagesAtDeath[MAX_FIGHTERS];
@@ -88,7 +90,7 @@ private:
     // Stores the player that got the first kill
     struct FirstBlood {
         void reset();
-        void update(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states);
+        void update(const rfcommon::Frame<4>& frame);
 
         int firstBloodFighterIdx;
     } firstBlood;
@@ -96,7 +98,7 @@ private:
     // Variables for tracking stage control
     struct StageControl {
         void reset();
-        void update(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states);
+        void update(const rfcommon::Frame<4>& frame);
 
         int isInNeutralState_[MAX_FIGHTERS];
         int neutralStateResetCounter_[MAX_FIGHTERS];
@@ -107,18 +109,18 @@ private:
     // the resulting string does, and whether it kills or not
     struct StringFinder {
         void reset();
-        void update(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states);
+        void update(const rfcommon::Frame<4>& frame);
 
         struct String {
             rfcommon::Vector<rfcommon::FighterMotion> moves;  // List of all moves in the string/combo
-            rfcommon::FighterMotion openingMove = 0;  // The move that started the string/combo
+            //rfcommon::FighterMotion openingMove = rfcommon::FighterMotion::makeInvalid();  // The move that started the string/combo
             double damage = 0.0;  // Damage dealt by the whole string/combo
             bool killed = false;  // Whether the string/combo killed
         };
 
         rfcommon::Vector<String> strings[MAX_FIGHTERS];
 
-        rfcommon::FighterStatus oldStatus_[MAX_FIGHTERS];
+        rfcommon::FighterStatus::Type oldStatus_[MAX_FIGHTERS];
         double oldDamage_[MAX_FIGHTERS];
         double oldHitstun_[MAX_FIGHTERS];
         int oldStocks_[MAX_FIGHTERS];

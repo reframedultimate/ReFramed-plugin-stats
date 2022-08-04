@@ -5,10 +5,12 @@
 #include "stats/models/UserLabelsModel.hpp"
 #include "stats/util/Paths.hpp"
 #include "stats/views/MainView.hpp"
-#include "rfcommon/RunningGameSession.hpp"
-#include "rfcommon/SavedGameSession.hpp"
 
-#include "stats/views/SettingsView.hpp"
+#include "rfcommon/Frame.hpp"
+#include "rfcommon/FrameData.hpp"
+#include "rfcommon/MappingInfo.hpp"
+#include "rfcommon/MetaData.hpp"
+#include "rfcommon/Session.hpp"
 
 // ----------------------------------------------------------------------------
 StatsPlugin::StatsPlugin(RFPluginFactory* factory)
@@ -29,8 +31,11 @@ StatsPlugin::StatsPlugin(RFPluginFactory* factory)
 // ----------------------------------------------------------------------------
 StatsPlugin::~StatsPlugin()
 {
-    if (session_)
-        session_->dispatcher.removeListener(this);
+    if (metaData_)
+    {
+        frameData_->dispatcher.removeListener(this);
+        metaData_->dispatcher.removeListener(this);
+    }
 
     settingsModel_->dispatcher.removeListener(this);
 }
@@ -55,107 +60,214 @@ void StatsPlugin::exportEmptyStats() const
 {
     if (settingsModel_->exportToOBS())
     {
+        const auto p1FighterID = metaData_ ? metaData_->fighterID(0) : rfcommon::FighterID::makeInvalid();
+        const auto p2FighterID = metaData_ ? metaData_->fighterID(1) : rfcommon::FighterID::makeInvalid();
+        const char* p1Fighter = mappingInfo_ ? mappingInfo_->fighter.toName(p1FighterID, "--") : "--";
+        const char* p2Fighter = mappingInfo_ ? mappingInfo_->fighter.toName(p2FighterID, "--") : "--";
+        const char* p1Tag = metaData_ ? metaData_->name(0).cStr() : "--";
+        const char* p2Tag = metaData_ ? metaData_->name(1).cStr() : "--";
+
         OBSExporter exporter(statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
-        if (session_)
-        {
-            const rfcommon::FighterIDMapping& fighterIDs = session_->mappingInfo().fighterID;
-            rfcommon::FighterID p1FighterID = session_->playerFighterID(0);
-            rfcommon::FighterID p2FighterID = session_->playerFighterID(1);
-            const rfcommon::String* p1Fighter = fighterIDs.map(p1FighterID);
-            const rfcommon::String* p2Fighter = fighterIDs.map(p2FighterID);
-
-            exporter.setPlayerTag(0, session_->playerTag(0).cStr());
-            exporter.setPlayerTag(1, session_->playerTag(1).cStr());
-            exporter.setPlayerCharacter(0, p1Fighter ? p1Fighter->cStr() : "--");
-            exporter.setPlayerCharacter(1, p2Fighter ? p2Fighter->cStr() : "--");
-        }
-
+        exporter.setPlayerTag(0, p1Tag);
+        exporter.setPlayerTag(1, p2Tag);
+        exporter.setPlayerCharacter(0, p1Fighter);
+        exporter.setPlayerCharacter(1, p2Fighter);
         exporter.exportEmptyValues();
     }
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::exportStats(const rfcommon::Session* session) const
+void StatsPlugin::exportStats(const rfcommon::MappingInfo* map, const rfcommon::MetaData* mdata) const
 {
     if (settingsModel_->exportToOBS())
     {
-        const rfcommon::FighterIDMapping& fighterIDs = session->mappingInfo().fighterID;
-        rfcommon::FighterID p1FighterID = session->playerFighterID(0);
-        rfcommon::FighterID p2FighterID = session->playerFighterID(1);
-        const rfcommon::String* p1Fighter = fighterIDs.map(p1FighterID);
-        const rfcommon::String* p2Fighter = fighterIDs.map(p2FighterID);
+        const auto p1FighterID = mdata->fighterID(0);
+        const auto p2FighterID = mdata->fighterID(1);
+        const char* p1Fighter = map->fighter.toName(p1FighterID, "--");
+        const char* p2Fighter = map->fighter.toName(p2FighterID, "--");
+        const char* p1Tag = mdata->name(0).cStr();
+        const char* p2Tag = mdata->name(1).cStr();
 
         OBSExporter exporter(statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
-        exporter.setPlayerTag(0, session->playerTag(0).cStr());
-        exporter.setPlayerTag(1, session->playerTag(1).cStr());
-        exporter.setPlayerCharacter(0, p1Fighter ? p1Fighter->cStr() : "--");
-        exporter.setPlayerCharacter(1, p2Fighter ? p2Fighter->cStr() : "--");
+        exporter.setPlayerTag(0, p1Tag);
+        exporter.setPlayerTag(1, p2Tag);
+        exporter.setPlayerCharacter(0, p1Fighter);
+        exporter.setPlayerCharacter(1, p2Fighter);
         exporter.exportStatistics();
     }
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::onProtocolMatchStarted(rfcommon::RunningGameSession* session)
+void StatsPlugin::onProtocolGameStarted(rfcommon::Session* game)
 {
-    // Unregister from current session, register to new session
-    if (session_)
-        session_->dispatcher.removeListener(this);
-    session_ = session;
-    session_->dispatcher.addListener(this);
+    statsCalculator_->resetStatistics();
+
+    // Unregister from current session
+    if (metaData_)
+    {
+        metaData_->dispatcher.removeListener(this);
+        frameData_->dispatcher.removeListener(this);
+        mappingInfo_.drop();
+        metaData_.drop();
+        frameData_.drop();
+    }
+
+    // We need mapping info, metadata and frame data in order to process
+    // statistics
+    auto map = game->tryGetMappingInfo();
+    auto mdata = game->tryGetMetaData();
+    auto fdata = game->tryGetFrameData();
+    if (map == nullptr || mdata == nullptr || fdata == nullptr)
+        return;
+
+    // Register as listeners so we are informed when data changes
+    mappingInfo_ = map;
+    metaData_ = mdata;
+    frameData_ = fdata;
+    metaData_->dispatcher.addListener(this);
+    frameData_->dispatcher.addListener(this);
 
     // If the session already has frames, process them so we are caught up
-    statsCalculator_->resetStatistics();
-    session_->replayUniqueFrameEvents(this);
+    for (int frameIdx = 0; frameIdx != frameData_->frameCount(); ++frameIdx)
+    {
+        rfcommon::Frame<4> frame;
+        for (int fighterIdx = 0; fighterIdx != frameData_->fighterCount(); ++fighterIdx)
+            frame.push(frameData_->stateAt(fighterIdx, frameIdx));
 
+        statsCalculator_->updateStatistics(frame);
+    }
+
+    // OBS should display empty statistics, since a new game has started now
     exportEmptyStats();
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::onProtocolMatchResumed(rfcommon::RunningGameSession* session)
+void StatsPlugin::onProtocolGameResumed(rfcommon::Session* game)
 {
-    // Unregister from current session, register to new session
-    if (session_)
-        session_->dispatcher.removeListener(this);
-    session_ = session;
-    session_->dispatcher.addListener(this);
-
-    // If the session already has frames, process them so we are caught up
-    statsCalculator_->resetStatistics();
-    session_->replayUniqueFrameEvents(this);  // XXX: This won't work, we require every frame because of counters
-
-    exportEmptyStats();
+    // pretty much same thing
+    onProtocolGameStarted(game);
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::onProtocolMatchEnded(rfcommon::RunningGameSession* session)
+void StatsPlugin::onProtocolGameEnded(rfcommon::Session* game)
 {
-    exportStats(session);
+    if (mappingInfo_)
+        exportStats(mappingInfo_, metaData_);
 
-    // We hold on to our reference to the session object until a new session
-    // is started, so that if settings change, the exporters still have
-    // data to export
+    // We hold on to our reference to the data until a new session is started, 
+    // so that if settings change, the exporters still have data to export
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::setSavedGameSession(rfcommon::SavedGameSession* session)
+void StatsPlugin::onGameSessionLoaded(rfcommon::Session* game)
 {
     statsCalculator_->resetStatistics();
-    session->replayUniqueFrameEvents(this);  // XXX: This won't work, we require every frame because of counters
 
-    exportStats(session);
+    // Unregister from current session
+    if (metaData_)
+    {
+        metaData_->dispatcher.removeListener(this);
+        frameData_->dispatcher.removeListener(this);
+        mappingInfo_.drop();
+        metaData_.drop();
+        frameData_.drop();
+    }
+
+    // We need mapping info, metadata and frame data in order to process
+    // statistics
+    rfcommon::MappingInfo* map = game->tryGetMappingInfo();
+    rfcommon::MetaData* mdata = game->tryGetMetaData();
+    rfcommon::FrameData* fdata = game->tryGetFrameData();
+    if (map == nullptr || mdata == nullptr || fdata == nullptr)
+        return;
+
+    // Register as listeners so we are informed when data changes
+    mappingInfo_ = map;
+    metaData_ = mdata;
+    frameData_ = fdata;
+    metaData_->dispatcher.addListener(this);
+    frameData_->dispatcher.addListener(this);
+
+    // Process all frames
+    for (int frameIdx = 0; frameIdx != fdata->frameCount(); ++frameIdx)
+    {
+        rfcommon::Frame<4> frame;
+        for (int fighterIdx = 0; fighterIdx != fdata->fighterCount(); ++fighterIdx)
+            frame.push(fdata->stateAt(fighterIdx, frameIdx));
+
+        statsCalculator_->updateStatistics(frame);
+    }
+
+    exportStats(map, mdata);
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::onRunningSessionNewFrame(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsPlugin::onGameSessionSetLoaded(rfcommon::Session** games, int numGames)
 {
-    statsCalculator_->updateStatistics(states);
+    statsCalculator_->resetStatistics();
+
+    // Unregister from current session
+    if (metaData_)
+    {
+        metaData_->dispatcher.removeListener(this);
+        frameData_->dispatcher.removeListener(this);
+        mappingInfo_.drop();
+        metaData_.drop();
+        frameData_.drop();
+    }
+
+    while (numGames--)
+    {
+        rfcommon::Session* game = *games++;
+
+        // We need mapping info, metadata and frame data in order to process
+        // statistics
+        rfcommon::MappingInfo* map = game->tryGetMappingInfo();
+        rfcommon::MetaData* mdata = game->tryGetMetaData();
+        rfcommon::FrameData* fdata = game->tryGetFrameData();
+        if (map == nullptr || mdata == nullptr || fdata == nullptr)
+            continue;
+
+        // Need these for the final export
+        mappingInfo_ = map;
+        metaData_ = mdata;
+
+        // Process all frames
+        for (int frameIdx = 0; frameIdx != fdata->frameCount(); ++frameIdx)
+        {
+            rfcommon::Frame<4> frame;
+            for (int fighterIdx = 0; fighterIdx != fdata->fighterCount(); ++fighterIdx)
+                frame.push(fdata->stateAt(fighterIdx, frameIdx));
+
+            statsCalculator_->updateStatistics(frame);
+        }
+    }
+
+    if (mappingInfo_)
+    {
+        exportStats(mappingInfo_, metaData_);
+        mappingInfo_.drop();
+        metaData_.drop();
+    }
+}
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::onMetaDataPlayerNameChanged(int fighterIdx, const rfcommon::SmallString<15>& name)
+{
+    // TODO update player name
+}
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::onFrameDataNewFrame(int frameIdx, const rfcommon::Frame<4>& frame)
+{
+    statsCalculator_->updateStatistics(frame);
 }
 
 // ----------------------------------------------------------------------------
 void StatsPlugin::onSettingsStatTypesChanged()
 {
-    if (session_)
-        exportStats(session_);
+    if (metaData_)
+        exportStats(mappingInfo_, metaData_);
     else
         exportEmptyStats();
 }
@@ -163,8 +275,36 @@ void StatsPlugin::onSettingsStatTypesChanged()
 // ----------------------------------------------------------------------------
 void StatsPlugin::onSettingsOBSChanged()
 {
-    if (session_)
-        exportStats(session_);
+    if (metaData_)
+        exportStats(mappingInfo_, metaData_);
     else
         exportEmptyStats();
 }
+
+// ----------------------------------------------------------------------------
+// Unused callbacks
+void StatsPlugin::onProtocolAttemptConnectToServer(const char* ipAddress, uint16_t port) {}
+void StatsPlugin::onProtocolFailedToConnectToServer(const char* errormsg, const char* ipAddress, uint16_t port) {}
+void StatsPlugin::onProtocolConnectedToServer(const char* ipAddress, uint16_t port) {}
+void StatsPlugin::onProtocolDisconnectedFromServer() {}
+
+void StatsPlugin::onProtocolTrainingStarted(rfcommon::Session* training) {}
+void StatsPlugin::onProtocolTrainingResumed(rfcommon::Session* training) {}
+void StatsPlugin::onProtocolTrainingReset(rfcommon::Session* oldTraining, rfcommon::Session* newTraining) {}
+void StatsPlugin::onProtocolTrainingEnded(rfcommon::Session* training) {}
+
+void StatsPlugin::onGameSessionUnloaded(rfcommon::Session* game) {}
+void StatsPlugin::onGameSessionSetUnloaded(rfcommon::Session** games, int numGames) {}
+void StatsPlugin::onTrainingSessionLoaded(rfcommon::Session* training) {}
+void StatsPlugin::onTrainingSessionUnloaded(rfcommon::Session* training) {}
+
+void StatsPlugin::onMetaDataTimeStartedChanged(rfcommon::TimeStamp timeStarted) {}
+void StatsPlugin::onMetaDataTimeEndedChanged(rfcommon::TimeStamp timeEnded) {}
+
+void StatsPlugin::onMetaDataSetNumberChanged(rfcommon::SetNumber number) {}
+void StatsPlugin::onMetaDataGameNumberChanged(rfcommon::GameNumber number) {}
+void StatsPlugin::onMetaDataSetFormatChanged(const rfcommon::SetFormat& format) {}
+void StatsPlugin::onMetaDataWinnerChanged(int winnerPlayerIdx) {}
+
+void StatsPlugin::onMetaDataTrainingSessionNumberChanged(rfcommon::GameNumber number) {}
+void StatsPlugin::onFrameDataNewUniqueFrame(int frameIdx, const rfcommon::Frame<4>& frame) {}

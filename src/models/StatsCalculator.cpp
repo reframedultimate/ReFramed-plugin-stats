@@ -1,29 +1,25 @@
 #include "stats/models/StatsCalculator.hpp"
 #include "stats/listeners/StatsCalculatorListener.hpp"
-#include "rfcommon/Session.hpp"
-#include "rfcommon/PlayerState.hpp"
-
-#include <QDebug>
+#include "rfcommon/Frame.hpp"
+#include "rfcommon/FighterState.hpp"
+#include "rfcommon/LinearMap.hpp"
 
 // TODO Extract this info from the global mapping info structure, once
 // ReFramed's refactoring is done and this is possible.
-enum StatusKinds
-{
-    FIGHTER_STATUS_KIND_LANDING = 22,
-    FIGHTER_STATUS_KIND_PASSIVE = 103,
-    FIGHTER_STATUS_KIND_PASSIVE_FB = 104,
-    FIGHTER_STATUS_KIND_WAIT = 0,
-    FIGHTER_STATUS_KIND_GUARD_ON = 27,
-    FIGHTER_STATUS_KIND_JUMP_SQUAT = 10,
-    FIGHTER_STATUS_KIND_WALK = 1,
-    FIGHTER_STATUS_KIND_DASH = 3,
-    FIGHTER_STATUS_KIND_REBIRTH = 182,
-    FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY = 92,
-    FIGHTER_STATUS_KIND_DEAD = 181
-};
+static const auto FIGHTER_STATUS_KIND_LANDING = rfcommon::FighterStatus::fromValue(22);
+static const auto FIGHTER_STATUS_KIND_PASSIVE = rfcommon::FighterStatus::fromValue(103);
+static const auto FIGHTER_STATUS_KIND_PASSIVE_FB = rfcommon::FighterStatus::fromValue(104);
+static const auto FIGHTER_STATUS_KIND_WAIT = rfcommon::FighterStatus::fromValue(0);
+static const auto FIGHTER_STATUS_KIND_GUARD_ON = rfcommon::FighterStatus::fromValue(27);
+static const auto FIGHTER_STATUS_KIND_JUMP_SQUAT = rfcommon::FighterStatus::fromValue(10);
+static const auto FIGHTER_STATUS_KIND_WALK = rfcommon::FighterStatus::fromValue(1);
+static const auto FIGHTER_STATUS_KIND_DASH = rfcommon::FighterStatus::fromValue(3);
+static const auto FIGHTER_STATUS_KIND_REBIRTH = rfcommon::FighterStatus::fromValue(182);
+static const auto FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY = rfcommon::FighterStatus::fromValue(92);
+static const auto FIGHTER_STATUS_KIND_DEAD = rfcommon::FighterStatus::fromValue(181);
 
 // ----------------------------------------------------------------------------
-static bool isTouchingGround(const rfcommon::PlayerState& state)
+static bool isTouchingGround(const rfcommon::FighterState& state)
 {
     const rfcommon::FighterStatus landStates[] = {
         FIGHTER_STATUS_KIND_LANDING,
@@ -62,17 +58,17 @@ void StatsCalculator::resetStatistics()
 }
 
 // ----------------------------------------------------------------------------
-void StatsCalculator::updateStatistics(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::updateStatistics(const rfcommon::Frame<4>& frame)
 {
     // We only care about 1v1 for now
-    if (states.count() != 2)
+    if (frame.count() != 2)
         return;
 
-    damageCounters.update(states);
-    damagesAtDeath.update(states);
-    firstBlood.update(states);
-    stageControl.update(states);
-    stringFinder.update(states);
+    damageCounters.update(frame);
+    damagesAtDeath.update(frame);
+    firstBlood.update(frame);
+    stageControl.update(frame);
+    stringFinder.update(frame);
 
     dispatcher.dispatch(&StatsCalculatorListener::onStatsUpdated);
 }
@@ -87,12 +83,12 @@ void StatsCalculator::DamageCounters::reset()
         oldDamage_[i] = 0.0;
     }
 }
-void StatsCalculator::DamageCounters::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::DamageCounters::update(const rfcommon::Frame<4>& frame)
 {
-    for (int i = 0; i != states.count(); ++i)
+    for (int i = 0; i != frame.count(); ++i)
     {
-        const double deltaDamage = states[i].damage() - oldDamage_[i];
-        oldDamage_[i] = states[i].damage();
+        const double deltaDamage = frame[i].damage() - oldDamage_[i];
+        oldDamage_[i] = frame[i].damage();
 
         // Only care about cases where damage increases. Note that delta can be negative
         // when a player heals or respawns.
@@ -104,12 +100,12 @@ void StatsCalculator::DamageCounters::update(const rfcommon::SmallVector<rfcommo
             // players we have to rely on attackConnected().
             // XXX There is currently no way to distinguish self-damage from projectile
             // damage. attackConnected() is not true for projectiles.
-            for (int j = 0; j != states.count(); ++j)
+            for (int j = 0; j != frame.count(); ++j)
             {
                 if (i == j)
                     continue;
 
-                if (states.count() == 2)  // Is 1v1
+                if (frame.count() == 2)  // Is 1v1
                 {
                     // This ignores self damage but it's close enough
                     totalDamageDealt[j] += deltaDamage;
@@ -117,13 +113,13 @@ void StatsCalculator::DamageCounters::update(const rfcommon::SmallVector<rfcommo
                 else
                 {
                     // This ignores projectile damage
-                    if (states[j].attackConnected())
+                    if (frame[j].flags().attackConnected())
                         totalDamageDealt[j] += deltaDamage;
                 }
             }
 
             // Damage but accounting for heals
-            // if (states[i].damage() != oldDamage_[i] && states[i].status() != FIGHTER_STATUS_KIND_REBIRTH)
+            // if (states[i].damage() != oldDamage_[i] && frame[i].status() != FIGHTER_STATUS_KIND_REBIRTH)
             //     damageTaken_[i] += states[i].damage() - oldDamage_[i];
         }
     }
@@ -138,19 +134,19 @@ void StatsCalculator::DamagesAtDeath::reset()
         damagesAtDeath[i].clearCompact();
     }
 }
-void StatsCalculator::DamagesAtDeath::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8>& states)
+void StatsCalculator::DamagesAtDeath::update(const rfcommon::Frame<4>& frame)
 {
-    for (int i = 0; i != states.count(); ++i)
+    for (int i = 0; i != frame.count(); ++i)
     {
         // This is either the first frame, or the player somehow gained a stock (items lol?)
-        if (oldStocks_[i] < states[i].stocks())
-            oldStocks_[i] = states[i].stocks();
+        if (oldStocks_[i] < frame[i].stocks().value())
+            oldStocks_[i] = frame[i].stocks().value();
 
         // Store player damage at death
-        if (states[i].stocks() < oldStocks_[i])
+        if (frame[i].stocks().value() < oldStocks_[i])
         {
-            damagesAtDeath[i].push(states[i].damage());
-            oldStocks_[i] = states[i].stocks();
+            damagesAtDeath[i].push(frame[i].damage());
+            oldStocks_[i] = frame[i].stocks().value();
         }
     }
 }
@@ -160,13 +156,13 @@ void StatsCalculator::FirstBlood::reset()
 {
     firstBloodFighterIdx = -1;
 }
-void StatsCalculator::FirstBlood::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8> & states)
+void StatsCalculator::FirstBlood::update(const rfcommon::Frame<4>& frame)
 {
     if (firstBloodFighterIdx == -1)
     {
-        if (states[0].stocks() > states[1].stocks())
+        if (frame[0].stocks() > frame[1].stocks())
             firstBloodFighterIdx = 0;
-        if (states[0].stocks() < states[1].stocks())
+        if (frame[0].stocks() < frame[1].stocks())
             firstBloodFighterIdx = 1;
     }
 }
@@ -181,11 +177,11 @@ void StatsCalculator::StageControl::reset()
         stageControl[i] = 0;
     }
 }
-void StatsCalculator::StageControl::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8> & states)
+void StatsCalculator::StageControl::update(const rfcommon::Frame<4>& frame)
 {
     // Got hit? No longer in neutral state
-    for (int i = 0; i != states.count(); ++i)
-        if (states[i].hitstun() > 0.0 || states[i].status() == FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY)
+    for (int i = 0; i != frame.count(); ++i)
+        if (frame[i].hitstun() > 0.0 || frame[i].status() == FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY)
         {
             isInNeutralState_[i] = 0;
             neutralStateResetCounter_[i] = 45;  // Some arbitrary value to make sure we don't reset
@@ -194,8 +190,8 @@ void StatsCalculator::StageControl::update(const rfcommon::SmallVector<rfcommon:
 
     // If player is no longer in hitstun and touches the ground, we put them back
     // into neutral state
-    for (int i = 0; i != states.count(); ++i)
-        if (states[i].hitstun() == 0.0 && isTouchingGround(states[i]))
+    for (int i = 0; i != frame.count(); ++i)
+        if (frame[i].hitstun() == 0.0 && isTouchingGround(frame[i]))
         {
             if (neutralStateResetCounter_[i] > 0)
                 neutralStateResetCounter_[i]--;
@@ -206,11 +202,11 @@ void StatsCalculator::StageControl::update(const rfcommon::SmallVector<rfcommon:
     // Figure out which player is in neutral and closest to stage center
     int playerInStageControl = -1;
     double distanceToCenter = std::numeric_limits<double>::max();
-    for (int i = 0; i != states.count(); ++i)
+    for (int i = 0; i != frame.count(); ++i)
     {
-        if (isInNeutralState_[i] && std::abs(states[i].posx()) < distanceToCenter)
+        if (isInNeutralState_[i] && std::abs(frame[i].posx()) < distanceToCenter)
         {
-            distanceToCenter = std::abs(states[i].posx());
+            distanceToCenter = std::abs(frame[i].posx());
             playerInStageControl = i;
         }
     }
@@ -235,18 +231,18 @@ void StatsCalculator::StringFinder::reset()
         opponentDamageAtOpening_[i] = 0.0;
     }
 }
-void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon::PlayerState, 8> & states)
+void StatsCalculator::StringFinder::update(const rfcommon::Frame<4>& frame)
 {
     // To make things a little clearer, we are looking at this from the
     // perspective of the player dealing the damage ("me"). The player 
     // getting combo'd is "them"
-    for (int them = 0; them != states.count(); ++them)
+    for (int them = 0; them != frame.count(); ++them)
     {
         // Detect if a move hit by seeing if the damage increased, and if the player enters
         // hitstun. The player can receive damage from the blastzone, this is why we check
         // hitstun as well.
-        if ((states[them].hitstun() > oldHitstun_[them]) || 
-            (states[them].status() == FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY && oldStatus_[them] != FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY))
+        if ((frame[them].hitstun() > oldHitstun_[them]) ||
+            (frame[them].status() == FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY && oldStatus_[them] != FIGHTER_STATUS_KIND_SHIELD_BREAK_FLY.value()))
         {
             // This is the first time they got hit in neutral. We set up some counters so we can
             // follow the string and see how much damage it does/whether it kills
@@ -254,15 +250,15 @@ void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon:
             {
                 // Figure out which player started the combo. 
                 // XXX: Currently we only support 1v1
-                if (states.count() != 2)
+                if (frame.count() != 2)
                     return;
                 int me = beingCombodByIdx_[them] = 1 - them;  // Simply the other player
 
-                strings[me].push({});
+                strings[me].emplace();
 
                 // Store the opening move that started the combo
-                strings[me].back().moves.push(states[me].motion());
-                strings[me].back().damage = states[them].damage() - oldDamage_[them];
+                strings[me].back().moves.push(frame[me].motion());
+                strings[me].back().damage = frame[them].damage() - oldDamage_[them];
 
                 // Start a new damage counter for this string
                 opponentDamageAtOpening_[me] = oldDamage_[them];  // Store damage before the hit
@@ -273,8 +269,8 @@ void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon:
                 int me = beingCombodByIdx_[them];
 
                 // Add move to list
-                strings[me].back().moves.push(states[me].motion());
-                strings[me].back().damage = states[them].damage() - opponentDamageAtOpening_[me];
+                strings[me].back().moves.push(frame[me].motion());
+                strings[me].back().damage = frame[them].damage() - opponentDamageAtOpening_[me];
             }
 
             isInNeutralState_[them] = 0;
@@ -284,12 +280,12 @@ void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon:
     }
 
     // If the player dies, mark that the string killed
-    for (int i = 0; i != states.count(); ++i)
+    for (int i = 0; i != frame.count(); ++i)
     {
-        if (beingCombodByIdx_[i] > -1 && states[i].status() == FIGHTER_STATUS_KIND_DEAD && oldStatus_[i] != FIGHTER_STATUS_KIND_DEAD)
+        if (beingCombodByIdx_[i] > -1 && frame[i].status() == FIGHTER_STATUS_KIND_DEAD && oldStatus_[i] != FIGHTER_STATUS_KIND_DEAD.value())
         {
             int me = beingCombodByIdx_[i];
-            strings[me].back().damage = opponentDamageAtOpening_[me] - states[i].damage();
+            strings[me].back().damage = opponentDamageAtOpening_[me] - frame[i].damage();
             strings[me].back().killed = true;
             beingCombodByIdx_[i] = -1;
             neutralStateResetCounter_[i] = 0;
@@ -299,8 +295,8 @@ void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon:
 
     // If player is no longer in hitstun and touches the ground, we put them back
     // into neutral state
-    for (int i = 0; i != states.count(); ++i)
-        if (states[i].hitstun() == 0.0 && isTouchingGround(states[i]))
+    for (int i = 0; i != frame.count(); ++i)
+        if (frame[i].hitstun() == 0.0 && isTouchingGround(frame[i]))
         {
             if (neutralStateResetCounter_[i] > 0)
             {
@@ -314,11 +310,11 @@ void StatsCalculator::StringFinder::update(const rfcommon::SmallVector<rfcommon:
         }
 
     // Have to update old vars
-    for (int i = 0; i != states.count(); ++i)
+    for (int i = 0; i != frame.count(); ++i)
     {
-        oldHitstun_[i] = states[i].hitstun();
-        oldDamage_[i] = states[i].damage();
-        oldStatus_[i] = states[i].status();
+        oldHitstun_[i] = frame[i].hitstun();
+        oldDamage_[i] = frame[i].damage();
+        oldStatus_[i] = frame[i].status().value();
     }
 }
 
@@ -459,7 +455,7 @@ rfcommon::FighterMotion StatsCalculator::mostCommonNeutralOpeningMove(int fighte
     for (const auto& string : stringFinder.strings[fighterIdx])
         candidates.insertOrGet(string.moves.front(), 0)->value()++;
 
-    rfcommon::FighterMotion mostUsed = 0;
+    auto mostUsed = rfcommon::FighterMotion::makeInvalid();
     int timesUsed = 0;
     for (auto candidate : candidates)
         if (timesUsed < candidate.value())
@@ -479,7 +475,7 @@ rfcommon::FighterMotion StatsCalculator::mostCommonKillMove(int fighterIdx) cons
         if (string.killed)
             candidates.insertOrGet(string.moves.back(), 0)->value()++;
 
-    rfcommon::FighterMotion mostUsed = 0;
+    auto mostUsed = rfcommon::FighterMotion::makeInvalid();
     int timesUsed = 0;
     for (auto candidate : candidates)
         if (timesUsed < candidate.value())
@@ -499,7 +495,7 @@ rfcommon::FighterMotion StatsCalculator::mostCommonNeutralOpenerIntoKillMove(int
         if (string.killed)
             candidates.insertOrGet(string.moves.front(), 0)->value()++;
 
-    rfcommon::FighterMotion mostUsed = 0;
+    auto mostUsed = rfcommon::FighterMotion::makeInvalid();
     int timesUsed = 0;
     for (auto candidate : candidates)
         if (timesUsed < candidate.value())

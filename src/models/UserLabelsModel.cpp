@@ -3,9 +3,9 @@
 #include <memory>
 
 // ----------------------------------------------------------------------------
-static uint64_t hexStringToValue(const char* hex, int* error)
+static rfcommon::FighterMotion::Type hexStringToValue(const char* hex, int* error)
 {
-    uint64_t value = 0;
+    rfcommon::FighterMotion::Type value = 0;
 
     if (hex[0] == '0' && (hex[1] == 'x' || hex[1] == 'X'))
         hex += 2;
@@ -52,7 +52,7 @@ bool UserLabelsModel::loadMotionLabels(const char* fileName)
         *delim = '\0';
 
         int error = 0;
-        rfcommon::FighterMotion motionValue = hexStringToValue(line, &error);
+        rfcommon::FighterMotion::Type motionValue = hexStringToValue(line, &error);
         if (motionValue == 0)
         {
             if (error)
@@ -62,10 +62,10 @@ bool UserLabelsModel::loadMotionLabels(const char* fileName)
             continue;
         }
 
-        rfcommon::FighterMotion motion(motionValue);
+        auto motion = rfcommon::FighterMotion::fromValue(motionValue);
         rfcommon::SmallString<31> label(labelStr);
 
-        auto motionMapResult = motionLabels.motionMap.insertNew(motion, -1);
+        auto motionMapResult = motionLabels.motionMap.insertIfNew(motion, -1);
         if (motionMapResult == motionLabels.motionMap.end())
         {
             fprintf(stderr, "Duplicate motion value: %s\n", line);
