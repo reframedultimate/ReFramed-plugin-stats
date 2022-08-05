@@ -8,6 +8,7 @@
 namespace rfcommon {
     class Session;
     class FighterState;
+    class FrameData;
     template <int N> class Frame;
 }
 
@@ -31,6 +32,8 @@ public:
      * frame of data.
      */
     void updateStatistics(const rfcommon::Frame<4>& frame);
+
+    void udpateStatisticsBulk(const rfcommon::FrameData* fdata);
 
     double avgDeathPercent(int fighterIdx) const;
     double earliestDeathPercent(int fighterIdx) const;
@@ -66,6 +69,9 @@ public:
     rfcommon::FighterMotion mostCommonNeutralOpenerIntoKillMove(int fighterIdx) const;
 
     rfcommon::ListenerDispatcher<StatsCalculatorListener> dispatcher;
+
+private:
+    void updateStatsSilent(const rfcommon::Frame<4>& frame);
 
 private:
     // Variables for tracking damage taken/dealt

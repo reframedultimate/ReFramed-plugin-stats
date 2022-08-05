@@ -128,14 +128,7 @@ void StatsPlugin::onProtocolGameStarted(rfcommon::Session* game)
     frameData_->dispatcher.addListener(this);
 
     // If the session already has frames, process them so we are caught up
-    for (int frameIdx = 0; frameIdx != frameData_->frameCount(); ++frameIdx)
-    {
-        rfcommon::Frame<4> frame;
-        for (int fighterIdx = 0; fighterIdx != frameData_->fighterCount(); ++fighterIdx)
-            frame.push(frameData_->stateAt(fighterIdx, frameIdx));
-
-        statsCalculator_->updateStatistics(frame);
-    }
+    statsCalculator_->udpateStatisticsBulk(fdata);
 
     // OBS should display empty statistics, since a new game has started now
     exportEmptyStats();
@@ -189,14 +182,7 @@ void StatsPlugin::onGameSessionLoaded(rfcommon::Session* game)
     frameData_->dispatcher.addListener(this);
 
     // Process all frames
-    for (int frameIdx = 0; frameIdx != fdata->frameCount(); ++frameIdx)
-    {
-        rfcommon::Frame<4> frame;
-        for (int fighterIdx = 0; fighterIdx != fdata->fighterCount(); ++fighterIdx)
-            frame.push(fdata->stateAt(fighterIdx, frameIdx));
-
-        statsCalculator_->updateStatistics(frame);
-    }
+    statsCalculator_->udpateStatisticsBulk(fdata);
 
     exportStats(map, mdata);
 }
@@ -233,14 +219,7 @@ void StatsPlugin::onGameSessionSetLoaded(rfcommon::Session** games, int numGames
         metaData_ = mdata;
 
         // Process all frames
-        for (int frameIdx = 0; frameIdx != fdata->frameCount(); ++frameIdx)
-        {
-            rfcommon::Frame<4> frame;
-            for (int fighterIdx = 0; fighterIdx != fdata->fighterCount(); ++fighterIdx)
-                frame.push(fdata->stateAt(fighterIdx, frameIdx));
-
-            statsCalculator_->updateStatistics(frame);
-        }
+        statsCalculator_->udpateStatisticsBulk(fdata);
     }
 
     if (mappingInfo_)

@@ -1,6 +1,7 @@
 #include "stats/models/StatsCalculator.hpp"
 #include "stats/listeners/StatsCalculatorListener.hpp"
 #include "rfcommon/Frame.hpp"
+#include "rfcommon/FrameData.hpp"
 #include "rfcommon/FighterState.hpp"
 #include "rfcommon/LinearMap.hpp"
 
@@ -58,8 +59,8 @@ void StatsCalculator::resetStatistics()
 }
 
 // ----------------------------------------------------------------------------
-void StatsCalculator::updateStatistics(const rfcommon::Frame<4>& frame)
-{
+void StatsCalculator::updateStatsSilent(const rfcommon::Frame<4>& frame)
+{    
     // We only care about 1v1 for now
     if (frame.count() != 2)
         return;
@@ -69,6 +70,26 @@ void StatsCalculator::updateStatistics(const rfcommon::Frame<4>& frame)
     firstBlood.update(frame);
     stageControl.update(frame);
     stringFinder.update(frame);
+}
+
+// ----------------------------------------------------------------------------
+void StatsCalculator::updateStatistics(const rfcommon::Frame<4>& frame)
+{
+    updateStatsSilent(frame);
+    dispatcher.dispatch(&StatsCalculatorListener::onStatsUpdated);
+}
+
+// ----------------------------------------------------------------------------
+void StatsCalculator::udpateStatisticsBulk(const rfcommon::FrameData* fdata)
+{
+    for (int frameIdx = 0; frameIdx != fdata->frameCount(); ++frameIdx)
+    {
+        rfcommon::Frame<4> frame;
+        for (int fighterIdx = 0; fighterIdx != fdata->fighterCount(); ++fighterIdx)
+            frame.push(fdata->stateAt(fighterIdx, frameIdx));
+
+        updateStatsSilent(frame);
+    }
 
     dispatcher.dispatch(&StatsCalculatorListener::onStatsUpdated);
 }
