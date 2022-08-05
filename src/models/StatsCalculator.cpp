@@ -417,10 +417,31 @@ double StatsCalculator::avgDamagePerOpening(int fighterIdx) const
 // ----------------------------------------------------------------------------
 double StatsCalculator::openingsPerKill(int fighterIdx) const
 {
+    // See issue #10 - Used to be numNeutralWins() / numStocksTaken(),
+    // but the problem is this assumes that the last few neutral openings
+    // lead to a kill.
+    //
+    // suppose:
+    //   you win neutral 2 times to take the first stock
+    //   you win neutral 2 more times to take the second stock
+    //   you win neutral 100 times but don't take the third stock, then you lose
+    //   numNeutralWins = 104
+    //   numKillingNeutralWins = 2
+    //   we want to compute neutralWinsBeforeLastStockYouTook = 4
+
+    const auto& fighterStrings = stringFinder.strings[fighterIdx];
+    int neutralWinsBeforeLastStockTaken;
+    for (int i = fighterStrings.count() - 1; i >= 0; --i)
+        if (fighterStrings[i].killed)  // This is the last stock that this fighter took
+        {
+            neutralWinsBeforeLastStockTaken = i + 1;  // Since we index from 0, not 1
+            break;
+        }
+
     const int stocksTaken = numStocksTaken(fighterIdx);
     if (stocksTaken == 0)
         return 0.0;
-    return static_cast<double>(numNeutralWins(fighterIdx)) / stocksTaken;
+    return static_cast<double>(neutralWinsBeforeLastStockTaken) / stocksTaken;
 }
 
 // ----------------------------------------------------------------------------
