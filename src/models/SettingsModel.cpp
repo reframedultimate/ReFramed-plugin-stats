@@ -26,8 +26,16 @@ bool SettingsModel::load()
     exportToOBS_ = obs["enabled"].toBool(false);
     additionalNewlinesOBS_ = obs["extranewlines"].toInt(0);
     destinationFolderOBS_ = obs["dir"].toString("");
+    exportIntervalOBS_ = obs["exportinterval"].toInt(0);
 
     const QJsonObject stats = data["stats"].toObject();
+    QString resetBehaviorStr = stats["reseteach"].toString("");
+
+    if (resetBehaviorStr == "set")
+        resetBehavior_ = RESET_EACH_SET;
+    else
+        resetBehavior_ = RESET_EACH_GAME;
+
     if (stats.contains("enabled"))
     {
         // Reset arrays
@@ -75,14 +83,24 @@ bool SettingsModel::save()
         enabledStats.append(statTypeToString(type));
     }
 
+    auto resetBehaviorStr = [this]() -> const char* {
+        switch (resetBehavior_) {
+            case RESET_EACH_GAME: return "game";
+            case RESET_EACH_SET: return "set";
+        }
+        return "";
+    };
+
     QJsonObject stats = {
-        {"enabled", enabledStats}
+        {"enabled", enabledStats},
+        {"reseteach", resetBehaviorStr()}
     };
 
     QJsonObject obs = {
         {"enabled", exportToOBS()},
         {"extranewlines", additionalNewlinesOBS()},
-        {"dir", destinationFolderOBS().absolutePath()}
+        {"dir", destinationFolderOBS().absolutePath()},
+        {"exportinterval", exportIntervalOBS_}
     };
 
     QJsonObject data = {
@@ -119,7 +137,7 @@ void SettingsModel::setStatEnabled(StatType type, bool enable)
     statEnabled_[type] = enable;
 
     save();
-    dispatcher.dispatch(&SettingsListener::onSettingsStatTypesChanged);
+    dispatcher.dispatch(&SettingsListener::onSettingsStatsChanged);
 }
 
 // ----------------------------------------------------------------------------
@@ -143,7 +161,7 @@ void SettingsModel::setStatAtIndex(int idx, StatType type)
     statAtIndex_.insert(idx, type);
 
     save();
-    dispatcher.dispatch(&SettingsListener::onSettingsStatTypesChanged);
+    dispatcher.dispatch(&SettingsListener::onSettingsStatsChanged);
 }
 
 // ----------------------------------------------------------------------------
@@ -156,6 +174,27 @@ StatType SettingsModel::statAtIndex(int idx) const
 int SettingsModel::numStatsEnabled() const
 {
     return statAtIndex_.count();
+}
+
+// ----------------------------------------------------------------------------
+SettingsModel::ResetBehavior SettingsModel::resetBehavior() const
+{
+    return resetBehavior_;
+}
+
+// ----------------------------------------------------------------------------
+void SettingsModel::setResetBehavior(ResetBehavior behavior)
+{
+    resetBehavior_ = behavior;
+
+    save();
+    dispatcher.dispatch(&SettingsListener::onSettingsOBSChanged);
+}
+
+// ----------------------------------------------------------------------------
+bool SettingsModel::exportToOBS() const
+{
+    return exportToOBS_;
 }
 
 // ----------------------------------------------------------------------------
@@ -177,9 +216,36 @@ void SettingsModel::setAdditionalNewlinesOBS(int lines)
 }
 
 // ----------------------------------------------------------------------------
+int SettingsModel::additionalNewlinesOBS() const
+{
+    return additionalNewlinesOBS_;
+}
+
+// ----------------------------------------------------------------------------
 void SettingsModel::setDestinationFolderOBS(const QDir& dir)
 {
     destinationFolderOBS_ = dir;
+
+    save();
+    dispatcher.dispatch(&SettingsListener::onSettingsOBSChanged);
+}
+
+// ----------------------------------------------------------------------------
+const QDir& SettingsModel::destinationFolderOBS() const
+{
+    return destinationFolderOBS_;
+}
+
+// ----------------------------------------------------------------------------
+int SettingsModel::exportIntervalOBS() const
+{
+    return exportIntervalOBS_;
+}
+
+// ----------------------------------------------------------------------------
+void SettingsModel::setExportIntervalOBS(int seconds)
+{
+    exportIntervalOBS_ = seconds;
 
     save();
     dispatcher.dispatch(&SettingsListener::onSettingsOBSChanged);

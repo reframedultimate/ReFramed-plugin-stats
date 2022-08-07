@@ -30,7 +30,7 @@ private:
 
 private:
     void onStatsUpdated() override;
-    void onSettingsStatTypesChanged() override;
+    void onSettingsStatsChanged() override;
     void onSettingsOBSChanged() override {}
 
 private:

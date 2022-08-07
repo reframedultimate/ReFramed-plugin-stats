@@ -28,6 +28,23 @@ public:
     StatsPlugin(RFPluginFactory* factory);
     ~StatsPlugin();
 
+    void resetStatsIfAppropriate(rfcommon::Session* session);
+    void clearSession();
+    bool addSession(rfcommon::Session* session);
+
+    /*!
+     * \brief Export all files but fills them with dummy statistics (lots
+     * of zeros, no names, etc.) This is mostly to indicate that a new game
+     * has started and statistics aren't available yet.
+     */
+    void exportEmptyStats() const;
+
+    /*!
+     * \brief Export all statistics to files.
+     */
+    void exportStats(const rfcommon::MappingInfo* map, const rfcommon::MetaData* mdata) const;
+
+private:
     /*!
      * This is called by ReFramed to create an instance of your view.
      * It is possible that this gets called more than once, for example if
@@ -42,10 +59,6 @@ public:
      * it will give it back to you to destroy.
      */
     void destroyView(QWidget* view) override;
-
-private:
-    void exportEmptyStats() const;
-    void exportStats(const rfcommon::MappingInfo* map, const rfcommon::MetaData* mdata) const;
 
 private:
     // These get called by the main application when connecting/disconnecting
@@ -98,7 +111,7 @@ private:
 
 private:
     // The export code is implemented in these callbacks
-    void onSettingsStatTypesChanged() override;
+    void onSettingsStatsChanged() override;
     void onSettingsOBSChanged() override;
 
 private:

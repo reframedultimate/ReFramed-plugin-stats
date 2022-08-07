@@ -31,28 +31,68 @@ StatsPlugin::StatsPlugin(RFPluginFactory* factory)
 // ----------------------------------------------------------------------------
 StatsPlugin::~StatsPlugin()
 {
-    if (metaData_)
-    {
-        frameData_->dispatcher.removeListener(this);
-        metaData_->dispatcher.removeListener(this);
-    }
-
+    clearSession();
     settingsModel_->dispatcher.removeListener(this);
 }
 
 // ----------------------------------------------------------------------------
-QWidget* StatsPlugin::createView()
+void StatsPlugin::resetStatsIfAppropriate(rfcommon::Session* session)
 {
-    // Create new instance of view. The view registers as a listener to this model
-    //return new StatsView(model_.get());
-    return new MainView(statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
+    // Statistics reset logic
+    switch (settingsModel_->resetBehavior())
+    {
+        case SettingsModel::RESET_EACH_GAME: {
+            statsCalculator_->resetStatistics();
+        } break;
+
+        case SettingsModel::RESET_EACH_SET: {
+            // Reset statistics if this is game 1 in a set
+            auto mdata = session->tryGetMetaData();
+            if (mdata && mdata->type() == rfcommon::MetaData::GAME)
+            {
+                if (static_cast<rfcommon::GameMetaData*>(mdata)->gameNumber().value() == 1)
+                    statsCalculator_->resetStatistics();
+            }
+        } break;
+    }
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::destroyView(QWidget* view)
+void StatsPlugin::clearSession()
 {
-    // ReFramed no longer needs the view, delete it
-    delete view;
+    // Unregister from current session
+    if (metaData_)
+    {
+        metaData_->dispatcher.removeListener(this);
+        frameData_->dispatcher.removeListener(this);
+        mappingInfo_.drop();
+        metaData_.drop();
+        frameData_.drop();
+    }
+}
+
+// ----------------------------------------------------------------------------
+bool StatsPlugin::addSession(rfcommon::Session* session)
+{
+    // We need mapping info, metadata and frame data in order to process
+    // statistics
+    auto map = session->tryGetMappingInfo();
+    auto mdata = session->tryGetMetaData();
+    auto fdata = session->tryGetFrameData();
+    if (map == nullptr || mdata == nullptr || fdata == nullptr)
+        return false;
+
+    // Register as listeners so we are informed when data changes
+    mappingInfo_ = map;
+    metaData_ = mdata;
+    frameData_ = fdata;
+    metaData_->dispatcher.addListener(this);
+    frameData_->dispatcher.addListener(this);
+
+    // If the session already has frames, process them so we are caught up
+    statsCalculator_->udpateStatisticsBulk(fdata);
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------
@@ -98,53 +138,48 @@ void StatsPlugin::exportStats(const rfcommon::MappingInfo* map, const rfcommon::
 }
 
 // ----------------------------------------------------------------------------
+QWidget* StatsPlugin::createView()
+{
+    // Create new instance of view. The view registers as a listener to this model
+    //return new StatsView(model_.get());
+    return new MainView(statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
+}
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::destroyView(QWidget* view)
+{
+    // ReFramed no longer needs the view, delete it
+    delete view;
+}
+
+// ----------------------------------------------------------------------------
 void StatsPlugin::onProtocolGameStarted(rfcommon::Session* game)
 {
-    statsCalculator_->resetStatistics();
-
-    // Unregister from current session
-    if (metaData_)
+    resetStatsIfAppropriate(game);
+    clearSession();
+    if (addSession(game))
     {
-        metaData_->dispatcher.removeListener(this);
-        frameData_->dispatcher.removeListener(this);
-        mappingInfo_.drop();
-        metaData_.drop();
-        frameData_.drop();
+        // OBS should display empty statistics, since a new game has started now
+        exportEmptyStats();
     }
-
-    // We need mapping info, metadata and frame data in order to process
-    // statistics
-    auto map = game->tryGetMappingInfo();
-    auto mdata = game->tryGetMetaData();
-    auto fdata = game->tryGetFrameData();
-    if (map == nullptr || mdata == nullptr || fdata == nullptr)
-        return;
-
-    // Register as listeners so we are informed when data changes
-    mappingInfo_ = map;
-    metaData_ = mdata;
-    frameData_ = fdata;
-    metaData_->dispatcher.addListener(this);
-    frameData_->dispatcher.addListener(this);
-
-    // If the session already has frames, process them so we are caught up
-    statsCalculator_->udpateStatisticsBulk(fdata);
-
-    // OBS should display empty statistics, since a new game has started now
-    exportEmptyStats();
 }
 
 // ----------------------------------------------------------------------------
 void StatsPlugin::onProtocolGameResumed(rfcommon::Session* game)
 {
-    // pretty much same thing
-    onProtocolGameStarted(game);
+    resetStatsIfAppropriate(game);
+    clearSession();
+    if (addSession(game))
+    {
+        // OBS should display empty statistics, since a new game has started now
+        exportEmptyStats();
+    }
 }
 
 // ----------------------------------------------------------------------------
 void StatsPlugin::onProtocolGameEnded(rfcommon::Session* game)
 {
-    if (mappingInfo_)
+    if (mappingInfo_ && metaData_)
         exportStats(mappingInfo_, metaData_);
 
     // We hold on to our reference to the data until a new session is started, 
@@ -155,36 +190,16 @@ void StatsPlugin::onProtocolGameEnded(rfcommon::Session* game)
 void StatsPlugin::onGameSessionLoaded(rfcommon::Session* game)
 {
     statsCalculator_->resetStatistics();
+    clearSession();
+    if (addSession(game))
+        exportStats(mappingInfo_, metaData_);
+}
 
-    // Unregister from current session
-    if (metaData_)
-    {
-        metaData_->dispatcher.removeListener(this);
-        frameData_->dispatcher.removeListener(this);
-        mappingInfo_.drop();
-        metaData_.drop();
-        frameData_.drop();
-    }
-
-    // We need mapping info, metadata and frame data in order to process
-    // statistics
-    rfcommon::MappingInfo* map = game->tryGetMappingInfo();
-    rfcommon::MetaData* mdata = game->tryGetMetaData();
-    rfcommon::FrameData* fdata = game->tryGetFrameData();
-    if (map == nullptr || mdata == nullptr || fdata == nullptr)
-        return;
-
-    // Register as listeners so we are informed when data changes
-    mappingInfo_ = map;
-    metaData_ = mdata;
-    frameData_ = fdata;
-    metaData_->dispatcher.addListener(this);
-    frameData_->dispatcher.addListener(this);
-
-    // Process all frames
-    statsCalculator_->udpateStatisticsBulk(fdata);
-
-    exportStats(map, mdata);
+// ----------------------------------------------------------------------------
+void StatsPlugin::onGameSessionUnloaded(rfcommon::Session* game) 
+{
+    statsCalculator_->resetStatistics();
+    clearSession();
 }
 
 // ----------------------------------------------------------------------------
@@ -192,42 +207,21 @@ void StatsPlugin::onGameSessionSetLoaded(rfcommon::Session** games, int numGames
 {
     statsCalculator_->resetStatistics();
 
-    // Unregister from current session
-    if (metaData_)
+    for (int s = 0; s != numGames; ++s)
     {
-        metaData_->dispatcher.removeListener(this);
-        frameData_->dispatcher.removeListener(this);
-        mappingInfo_.drop();
-        metaData_.drop();
-        frameData_.drop();
+        clearSession();
+        addSession(games[s]);
     }
 
-    while (numGames--)
-    {
-        rfcommon::Session* game = *games++;
-
-        // We need mapping info, metadata and frame data in order to process
-        // statistics
-        rfcommon::MappingInfo* map = game->tryGetMappingInfo();
-        rfcommon::MetaData* mdata = game->tryGetMetaData();
-        rfcommon::FrameData* fdata = game->tryGetFrameData();
-        if (map == nullptr || mdata == nullptr || fdata == nullptr)
-            continue;
-
-        // Need these for the final export
-        mappingInfo_ = map;
-        metaData_ = mdata;
-
-        // Process all frames
-        statsCalculator_->udpateStatisticsBulk(fdata);
-    }
-
-    if (mappingInfo_)
-    {
+    if (mappingInfo_ && metaData_)
         exportStats(mappingInfo_, metaData_);
-        mappingInfo_.drop();
-        metaData_.drop();
-    }
+}
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::onGameSessionSetUnloaded(rfcommon::Session** games, int numGames)
+{
+    statsCalculator_->resetStatistics();
+    clearSession();
 }
 
 // ----------------------------------------------------------------------------
@@ -240,12 +234,22 @@ void StatsPlugin::onMetaDataPlayerNameChanged(int fighterIdx, const rfcommon::Sm
 void StatsPlugin::onFrameDataNewFrame(int frameIdx, const rfcommon::Frame<4>& frame)
 {
     statsCalculator_->updateStatistics(frame);
+
+    if (mappingInfo_ && metaData_)
+    {
+        if (settingsModel_->exportIntervalOBS() > 0)
+        {
+            const int interfalFrames = settingsModel_->exportIntervalOBS() * 60;
+            if (frameIdx % interfalFrames == 0)
+                exportStats(mappingInfo_, metaData_);
+        }
+    }
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::onSettingsStatTypesChanged()
+void StatsPlugin::onSettingsStatsChanged()
 {
-    if (metaData_)
+    if (mappingInfo_ && metaData_)
         exportStats(mappingInfo_, metaData_);
     else
         exportEmptyStats();
@@ -254,7 +258,7 @@ void StatsPlugin::onSettingsStatTypesChanged()
 // ----------------------------------------------------------------------------
 void StatsPlugin::onSettingsOBSChanged()
 {
-    if (metaData_)
+    if (mappingInfo_ && metaData_)
         exportStats(mappingInfo_, metaData_);
     else
         exportEmptyStats();
@@ -272,8 +276,6 @@ void StatsPlugin::onProtocolTrainingResumed(rfcommon::Session* training) {}
 void StatsPlugin::onProtocolTrainingReset(rfcommon::Session* oldTraining, rfcommon::Session* newTraining) {}
 void StatsPlugin::onProtocolTrainingEnded(rfcommon::Session* training) {}
 
-void StatsPlugin::onGameSessionUnloaded(rfcommon::Session* game) {}
-void StatsPlugin::onGameSessionSetUnloaded(rfcommon::Session** games, int numGames) {}
 void StatsPlugin::onTrainingSessionLoaded(rfcommon::Session* training) {}
 void StatsPlugin::onTrainingSessionUnloaded(rfcommon::Session* training) {}
 

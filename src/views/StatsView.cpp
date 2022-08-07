@@ -115,7 +115,7 @@ void StatsView::onStatsUpdated()
 }
 
 // ----------------------------------------------------------------------------
-void StatsView::onSettingsStatTypesChanged()
+void StatsView::onSettingsStatsChanged()
 {
     recreateLayout();
     updateStatsLabels();

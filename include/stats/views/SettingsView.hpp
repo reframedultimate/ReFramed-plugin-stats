@@ -19,12 +19,16 @@ public:
     ~SettingsView();
 
 private slots:
-    void onOBSCheckBoxToggled(bool enable);
+    void onResetEachGameToggled(bool eachGame);
+    void onStatEnabled(int insertIndex, StatType type);
+    void onStatDisabled(int insertIndex, StatType type);
+
+    void onOBSCheckBoxToggled(bool checked);
     void onOBSInsertNewLinesCheckBoxToggled(bool enable);
     void onOBSSpinBoxNewLinesChanged(int value);
     void onOBSBrowseFolderButtonReleased();
-    void onStatEnabled(int insertIndex, StatType type);
-    void onStatDisabled(int insertIndex, StatType type);
+    void onOBSExportAfterEachGameToggled(bool checked);
+    void onOBSExportIntervalValueChanged(int value);
 
 private:
     Ui::SettingsView* ui_;
