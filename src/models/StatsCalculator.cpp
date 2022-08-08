@@ -160,14 +160,14 @@ void StatsCalculator::DamagesAtDeath::update(const rfcommon::Frame<4>& frame)
     for (int i = 0; i != frame.count(); ++i)
     {
         // This is either the first frame, or the player somehow gained a stock (items lol?)
-        if (oldStocks_[i] < frame[i].stocks().value())
-            oldStocks_[i] = frame[i].stocks().value();
+        if (oldStocks_[i] < frame[i].stocks().count())
+            oldStocks_[i] = frame[i].stocks().count();
 
         // Store player damage at death
-        if (frame[i].stocks().value() < oldStocks_[i])
+        if (frame[i].stocks().count() < oldStocks_[i])
         {
             damagesAtDeath[i].push(frame[i].damage());
-            oldStocks_[i] = frame[i].stocks().value();
+            oldStocks_[i] = frame[i].stocks().count();
         }
     }
 }
@@ -225,9 +225,9 @@ void StatsCalculator::StageControl::update(const rfcommon::Frame<4>& frame)
     double distanceToCenter = std::numeric_limits<double>::max();
     for (int i = 0; i != frame.count(); ++i)
     {
-        if (isInNeutralState_[i] && std::abs(frame[i].posx()) < distanceToCenter)
+        if (isInNeutralState_[i] && std::abs(frame[i].pos().x()) < distanceToCenter)
         {
-            distanceToCenter = std::abs(frame[i].posx());
+            distanceToCenter = std::abs(frame[i].pos().x());
             playerInStageControl = i;
         }
     }
