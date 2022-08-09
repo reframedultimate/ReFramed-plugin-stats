@@ -105,13 +105,13 @@ public:
 
 private:
     bool statEnabled_[STAT_COUNT] = {
-#define X(type, str) true,
+#define X(type, str, colorcode) true,
         STAT_TYPES_LIST
 #undef X
     };
 
     rfcommon::SmallVector<StatType, STAT_COUNT> statAtIndex_ = {
-#define X(type, str) STAT_##type,
+#define X(type, str, colorcode) STAT_##type,
         STAT_TYPES_LIST
 #undef X
     };

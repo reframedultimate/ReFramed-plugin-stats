@@ -119,7 +119,6 @@ private:
 
         struct String {
             rfcommon::Vector<rfcommon::FighterMotion> moves;  // List of all moves in the string/combo
-            //rfcommon::FighterMotion openingMove = rfcommon::FighterMotion::makeInvalid();  // The move that started the string/combo
             double damage = 0.0;  // Damage dealt by the whole string/combo
             bool killed = false;  // Whether the string/combo killed
         };

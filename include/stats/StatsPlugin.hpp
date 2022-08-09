@@ -14,13 +14,13 @@ namespace rfcommon {
     class MetaData;
 }
 
+class PlayerMeta;
 class StatsCalculator;
 class SettingsModel;
 class UserLabelsModel;
 
 class StatsPlugin 
     : public rfcommon::RealtimePlugin
-    , public rfcommon::MetaDataListener
     , public rfcommon::FrameDataListener
     , public SettingsListener
 {
@@ -42,7 +42,7 @@ public:
     /*!
      * \brief Export all statistics to files.
      */
-    void exportStats(const rfcommon::MappingInfo* map, const rfcommon::MetaData* mdata) const;
+    void exportStats() const;
 
 private:
     /*!
@@ -91,20 +91,6 @@ private:
     void onGameSessionSetUnloaded(rfcommon::Session** games, int numGames) override;
 
 private:
-    void onMetaDataTimeStartedChanged(rfcommon::TimeStamp timeStarted) override;
-    void onMetaDataTimeEndedChanged(rfcommon::TimeStamp timeEnded) override;
-
-    // Game related events
-    void onMetaDataPlayerNameChanged(int fighterIdx, const rfcommon::SmallString<15>& name) override;
-    void onMetaDataSetNumberChanged(rfcommon::SetNumber number) override;
-    void onMetaDataGameNumberChanged(rfcommon::GameNumber number) override;
-    void onMetaDataSetFormatChanged(const rfcommon::SetFormat& format) override;
-    void onMetaDataWinnerChanged(int winnerPlayerIdx) override;
-
-    // In training mode this increments every time a new training room is loaded
-    void onMetaDataTrainingSessionNumberChanged(rfcommon::GameNumber number) override;
-
-private:
     // These get called whenever a new frame is received (during an active game)
     void onFrameDataNewUniqueFrame(int frameIdx, const rfcommon::Frame<4>& frame) override;
     void onFrameDataNewFrame(int frameIdx, const rfcommon::Frame<4>& frame) override;
@@ -115,9 +101,8 @@ private:
     void onSettingsOBSChanged() override;
 
 private:
-    rfcommon::Reference<rfcommon::MappingInfo> mappingInfo_;
-    rfcommon::Reference<rfcommon::MetaData> metaData_;
     rfcommon::Reference<rfcommon::FrameData> frameData_;
+    std::unique_ptr<PlayerMeta> playerMeta_;
     std::unique_ptr<StatsCalculator> statsCalculator_;
     std::unique_ptr<SettingsModel> settingsModel_;
     std::unique_ptr<UserLabelsModel> motionLabels_;

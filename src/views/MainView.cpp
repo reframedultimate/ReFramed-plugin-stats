@@ -6,12 +6,12 @@
 #include <QTabWidget>
 
 // ----------------------------------------------------------------------------
-MainView::MainView(StatsCalculator* statsModel, SettingsModel* settingsModel, UserLabelsModel* labels, QWidget* parent)
+MainView::MainView(PlayerMeta* playerMeta, StatsCalculator* statsModel, SettingsModel* settingsModel, UserLabelsModel* labels, QWidget* parent)
 {
     setLayout(new QVBoxLayout);
 
     QTabWidget* tabWidget = new QTabWidget;
-    tabWidget->addTab(new StatsView(statsModel, settingsModel, labels), "Statistics");
+    tabWidget->addTab(new StatsView(playerMeta, statsModel, settingsModel, labels), "Statistics");
     tabWidget->addTab(new SettingsView(settingsModel), "Settings");
     layout()->addWidget(tabWidget);
 }

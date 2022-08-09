@@ -2,7 +2,7 @@
 #include <cstring>
 
 static const char* table[] = {
-#define X(type, str) str,
+#define X(type, str, colorcode) str,
         STAT_TYPES_LIST
 #undef X
 };

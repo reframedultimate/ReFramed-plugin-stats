@@ -1,4 +1,5 @@
 #include "stats/views/StatsView.hpp"
+#include "stats/models/PlayerMeta.hpp"
 #include "stats/models/StatsCalculator.hpp"
 #include "stats/models/SettingsModel.hpp"
 #include "stats/util/StatsFormatter.hpp"
@@ -20,8 +21,9 @@ static void clearLayout(QLayout* layout)
 }
 
 // ----------------------------------------------------------------------------
-StatsView::StatsView(StatsCalculator* stats, SettingsModel* settings, UserLabelsModel* labels, QWidget* parent)
+StatsView::StatsView(PlayerMeta* playerMeta, StatsCalculator* stats, SettingsModel* settings, UserLabelsModel* labels, QWidget* parent)
     : QWidget(parent)
+    , playerMeta_(playerMeta)
     , stats_(stats)
     , settings_(settings)
     , labels_(labels)
@@ -32,6 +34,7 @@ StatsView::StatsView(StatsCalculator* stats, SettingsModel* settings, UserLabels
     updateStatsLabels();
 
     // Listen to any changes to the model
+    playerMeta_->dispatcher.addListener(this);
     stats_->dispatcher.addListener(this);
     settings_->dispatcher.addListener(this);
 }
@@ -42,6 +45,7 @@ StatsView::~StatsView()
     // Remove things in reverse order
     settings_->dispatcher.removeListener(this);
     stats_->dispatcher.removeListener(this);
+    playerMeta_->dispatcher.removeListener(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -74,13 +78,13 @@ void StatsView::recreateLayout()
     QFont statsFont;
     statsFont.setPointSize(12);
 
-    QLabel* p1Label = new QLabel("Player 1");
-    p1Label->setFont(titleFont);
-    layout_->addWidget(p1Label, 0, 0, Qt::AlignRight);
+    p1Label_ = new QLabel(playerMeta_->name(0));
+    p1Label_->setFont(titleFont);
+    layout_->addWidget(p1Label_, 0, 0, Qt::AlignRight);
 
-    QLabel* p2Label = new QLabel("Player 2");
-    p2Label->setFont(titleFont);
-    layout_->addWidget(p2Label, 0, 4, Qt::AlignLeft);
+    p2Label_ = new QLabel(playerMeta_->name(1));
+    p2Label_->setFont(titleFont);
+    layout_->addWidget(p2Label_, 0, 4, Qt::AlignLeft);
 
     QFrame* line = new QFrame;
     line->setFrameShape(QFrame::HLine);
@@ -119,4 +123,19 @@ void StatsView::onSettingsStatsChanged()
 {
     recreateLayout();
     updateStatsLabels();
+}
+
+// ----------------------------------------------------------------------------
+void StatsView::onSettingsOBSChanged()
+{
+
+}
+
+// ----------------------------------------------------------------------------
+void StatsView::onPlayerMetaChanged()
+{
+    const QString& p1name = playerMeta_->character(0);
+    const QString& p2name = playerMeta_->character(1);
+    p1Label_->setText(playerMeta_->name(0) + (p1name.size() ? " (" + p1name + ")" : ""));
+    p2Label_->setText(playerMeta_->name(1) + (p2name.size() ? " (" + p2name + ")" : ""));
 }
