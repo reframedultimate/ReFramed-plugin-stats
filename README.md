@@ -8,7 +8,8 @@ The following stats are available:
   - **Neutral Wins**: Number of times a player won neutral
   - **Neutral Losses**: Number of times a player lost neutral
   - **Non-Killing Neutral Wins**: Number of times a player won neutral and it didn't lead to a kill (opponent was able to reset neutral again)
-  - **Stocks Taken**: Number of times a player won neutral and got a kill
+  - **Stocks Taken**: Number of times a player won neutral and got a kill (This of course, will not count SDs as a kill)
+  - **Self Destructs**: Number of times a player dies, but was not killed.
   - **Neutral Win%**: Measure of how much more a player was able to win neutral vs their opponent
   - **Average Damage / Opening**: The average amount of damage a player does for every time they get an opening
   - **Stage Control**: Measure of how much time a player has controlled center stage over their opponent, in percent
@@ -37,7 +38,7 @@ The Qt web installer will ask you to create an account. You can use one of the m
 
 In the Windows start menu, search for "VS" and you should see "x86\_x64 Cross Tools Command Prompt for VS 2022". Open that up.
 
-Change the directory to a location where you would like to build ReFramed and its plugins. For me, this was ```C:\Users\faglord\Documents\programming```.
+Change the directory to a location where you would like to build ReFramed and its plugins. For me, this was ```C:\Users\username\Documents\programming```.
 
 We have to tell CMake where it can find Qt5. Type ```set Qt5_DIR=C:\Qt\Qt5.15.11\msvc2019_64```. This path may be different on your installation, so change it if necessary. The important detail is that you tell it to use the 64-bit version (msvc2019\_64).
 
@@ -61,7 +62,7 @@ Hopefully this all works successfully. If you run into issues you'll have to ope
 
 Next, clone this plugin:
 ```
-cd C:\Users\faglord\Documents\programming
+cd C:\Users\username\Documents\programming
 git clone https://github.com/reframedultimate/ReFramed-plugin-stats
 ```
 

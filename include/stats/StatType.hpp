@@ -16,6 +16,7 @@
     X(NEUTRAL_LOSSES, "Neutral Losses", "#be93f1") \
     X(NON_KILLING_NEUTRAL_WINS, "Non-Killing Neutral Wins", "#be93f1") \
     X(NEUTRAL_WIN_PERCENT, "Neutral Win %", "#be93f1") \
+    X(SELF_DESTRUCTS, "Self Destructs", "#F7F760") \
     X(STOCKS_TAKEN, "Stocks Taken", "#F7F760")
 
 enum StatType

@@ -52,6 +52,7 @@ void StatsCalculator::resetStatistics()
     damageCounters.reset();
     damagesAtDeath.reset();
     firstBlood.reset();
+    SelfDestructs.reset();
     stageControl.reset();
     stringFinder.reset();
 
@@ -68,6 +69,7 @@ void StatsCalculator::updateStatsSilent(const rfcommon::Frame<4>& frame)
     damageCounters.update(frame);
     damagesAtDeath.update(frame);
     firstBlood.update(frame);
+    SelfDestructs.update(frame);
     stageControl.update(frame);
     stringFinder.update(frame);
 }
@@ -185,6 +187,25 @@ void StatsCalculator::FirstBlood::update(const rfcommon::Frame<4>& frame)
             firstBloodFighterIdx = 0;
         if (frame[0].stocks() < frame[1].stocks())
             firstBloodFighterIdx = 1;
+    }
+}
+
+// ----------------------------------------------------------------------------
+// SELF DESTRUCTS WIP
+void StatsCalculator::SelfDestructs::reset()
+{
+  initialStocks = -1;
+  for (int i = 0; i != MAX_FIGHTERS; ++i)
+      numSelfDestructs[i] = 0;
+}
+void StatsCalculator::SelfDestructs::update(const rfcommon::Frame<4>& frame)
+{
+    if (initialStocks == -1)
+        initialStocks = frame[0].stocks().count();
+
+    for (int i = 0; i != frame.count(); ++i)
+    {
+        numSelfDestructs[i] = initialStocks - frame[i].stocks().count();
     }
 }
 
@@ -412,6 +433,18 @@ int StatsCalculator::numStocksTaken(int fighterIdx) const
         if (string.killed)
             count++;
     return count;
+}
+
+// ----------------------------------------------------------------------------
+// SELF DESTRUCTS WIP
+int StatsCalculator::numSelfDestructs(int fighterIdx) const
+{
+  if (fighterIdx > 1)  // Only support 1v1 for now
+      return 0;
+
+  int opponentIdx = 1 - fighterIdx;
+
+  return SelfDestructs.numSelfDestructs[fighterIdx] - numStocksTaken(opponentIdx);
 }
 
 // ----------------------------------------------------------------------------

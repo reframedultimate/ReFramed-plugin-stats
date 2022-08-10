@@ -22,6 +22,7 @@ QString StatsFormatter::playerStatAsString(int fighterIdx, StatType type) const
     case STAT_NEUTRAL_LOSSES: return QString::number(stats_->numNeutralLosses(fighterIdx));
     case STAT_NON_KILLING_NEUTRAL_WINS: return QString::number(stats_->numNonKillingNeutralWins(fighterIdx));
     case STAT_STOCKS_TAKEN: return QString::number(stats_->numStocksTaken(fighterIdx));
+    case STAT_SELF_DESTRUCTS: return QString::number(stats_->numSelfDestructs(fighterIdx));
     case STAT_NEUTRAL_WIN_PERCENT: return QString::number(stats_->neutralWinPercent(fighterIdx), 'f', 1) + "%";
     case STAT_AVERAGE_DAMAGE_PER_OPENING: return QString::number(stats_->avgDamagePerOpening(fighterIdx), 'f', 1) + "%";
     case STAT_OPENINGS_PER_KILL: return QString::number(stats_->openingsPerKill(fighterIdx), 'f', 1);
