@@ -106,4 +106,5 @@ private:
     std::unique_ptr<StatsCalculator> statsCalculator_;
     std::unique_ptr<SettingsModel> settingsModel_;
     std::unique_ptr<UserLabelsModel> motionLabels_;
+    bool weAreLive_ = false;
 };

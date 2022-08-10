@@ -148,6 +148,8 @@ void StatsPlugin::onProtocolGameStarted(rfcommon::Session* game)
         // OBS should display empty statistics, since a new game has started now
         exportEmptyStats();
     }
+
+    weAreLive_ = true;
 }
 
 // ----------------------------------------------------------------------------
@@ -160,11 +162,15 @@ void StatsPlugin::onProtocolGameResumed(rfcommon::Session* game)
         // OBS should display empty statistics, since a new game has started now
         exportEmptyStats();
     }
+
+    weAreLive_ = true;
 }
 
 // ----------------------------------------------------------------------------
 void StatsPlugin::onProtocolGameEnded(rfcommon::Session* game)
 {
+    weAreLive_ = false;
+
     exportStats();
 
     // We hold on to our reference to the data until a new session is started, 
@@ -241,7 +247,7 @@ void StatsPlugin::onFrameDataNewFrame(int frameIdx, const rfcommon::Frame<4>& fr
 {
     statsCalculator_->updateStatistics(frame);
 
-    if (settingsModel_->exportIntervalOBS() > 0)
+    if (weAreLive_ && settingsModel_->exportIntervalOBS() > 0)
     {
         const int interfalFrames = settingsModel_->exportIntervalOBS() * 60;
         if (frameIdx % interfalFrames == 0)
