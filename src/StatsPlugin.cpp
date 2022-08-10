@@ -172,6 +172,24 @@ void StatsPlugin::onProtocolGameEnded(rfcommon::Session* game)
 }
 
 // ----------------------------------------------------------------------------
+void StatsPlugin::onProtocolTrainingStarted(rfcommon::Session* training)
+{
+    statsCalculator_->resetStatistics();
+    clearSession();
+}
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::onProtocolTrainingResumed(rfcommon::Session* training)
+{
+    statsCalculator_->resetStatistics();
+    clearSession();
+}
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::onProtocolTrainingReset(rfcommon::Session* oldTraining, rfcommon::Session* newTraining) {}
+void StatsPlugin::onProtocolTrainingEnded(rfcommon::Session* training) {}
+
+// ----------------------------------------------------------------------------
 void StatsPlugin::onGameSessionLoaded(rfcommon::Session* game)
 {
     statsCalculator_->resetStatistics();
@@ -186,6 +204,16 @@ void StatsPlugin::onGameSessionUnloaded(rfcommon::Session* game)
     statsCalculator_->resetStatistics();
     clearSession();
 }
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::onTrainingSessionLoaded(rfcommon::Session* training)
+{
+    statsCalculator_->resetStatistics();
+    clearSession();
+}
+
+// ----------------------------------------------------------------------------
+void StatsPlugin::onTrainingSessionUnloaded(rfcommon::Session* training) {}
 
 // ----------------------------------------------------------------------------
 void StatsPlugin::onGameSessionSetLoaded(rfcommon::Session** games, int numGames)
@@ -245,13 +273,5 @@ void StatsPlugin::onProtocolAttemptConnectToServer(const char* ipAddress, uint16
 void StatsPlugin::onProtocolFailedToConnectToServer(const char* errormsg, const char* ipAddress, uint16_t port) {}
 void StatsPlugin::onProtocolConnectedToServer(const char* ipAddress, uint16_t port) {}
 void StatsPlugin::onProtocolDisconnectedFromServer() {}
-
-void StatsPlugin::onProtocolTrainingStarted(rfcommon::Session* training) {}
-void StatsPlugin::onProtocolTrainingResumed(rfcommon::Session* training) {}
-void StatsPlugin::onProtocolTrainingReset(rfcommon::Session* oldTraining, rfcommon::Session* newTraining) {}
-void StatsPlugin::onProtocolTrainingEnded(rfcommon::Session* training) {}
-
-void StatsPlugin::onTrainingSessionLoaded(rfcommon::Session* training) {}
-void StatsPlugin::onTrainingSessionUnloaded(rfcommon::Session* training) {}
 
 void StatsPlugin::onFrameDataNewUniqueFrame(int frameIdx, const rfcommon::Frame<4>& frame) {}
