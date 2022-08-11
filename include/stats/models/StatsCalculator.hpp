@@ -42,6 +42,7 @@ public:
     int numNeutralLosses(int fighterIdx) const;
     int numNonKillingNeutralWins(int fighterIdx) const;
     int numStocksTaken(int fighterIdx) const;
+    int numStocks(int fighterIdx) const;
     int numSelfDestructs(int fighterIdx) const;
     double neutralWinPercent(int fighterIdx) const;
     double avgDamagePerOpening(int fighterIdx) const;
@@ -103,13 +104,13 @@ private:
     } firstBlood;
 
     // Stores the initial value of the game's stock count
-    struct SelfDestructs {
+    struct Deaths {
         void reset();
         void update(const rfcommon::Frame<4>& frame);
 
         int initialStocks;
-        int numSelfDestructs[MAX_FIGHTERS];
-    } SelfDestructs;
+        int numDeaths[MAX_FIGHTERS];
+    } deaths;
 
     // Variables for tracking stage control
     struct StageControl {
