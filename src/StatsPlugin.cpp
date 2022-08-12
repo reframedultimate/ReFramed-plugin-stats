@@ -15,7 +15,7 @@
 
 // ----------------------------------------------------------------------------
 StatsPlugin::StatsPlugin(RFPluginFactory* factory)
-    : RealtimePlugin(factory)
+    : Plugin(factory)
     , playerMeta_(new PlayerMeta)
     , statsCalculator_(new StatsCalculator)
     , settingsModel_(new SettingsModel(dataDir().absoluteFilePath("settings.json")))
@@ -124,6 +124,13 @@ void StatsPlugin::exportStats() const
 }
 
 // ----------------------------------------------------------------------------
+rfcommon::Plugin::UIInterface* StatsPlugin::uiInterface() { return this; }
+rfcommon::Plugin::RealtimeInterface* StatsPlugin::realtimeInterface() { return this; }
+rfcommon::Plugin::ReplayInterface* StatsPlugin::replayInterface() { return this; }
+rfcommon::Plugin::VisualizerInterface* StatsPlugin::visualizerInterface() { return nullptr; }
+rfcommon::Plugin::VideoPlayerInterface* StatsPlugin::videoPlayerInterface() { return nullptr; }
+
+// ----------------------------------------------------------------------------
 QWidget* StatsPlugin::createView()
 {
     // Create new instance of view. The view registers as a listener to this model
@@ -173,7 +180,7 @@ void StatsPlugin::onProtocolGameEnded(rfcommon::Session* game)
 
     exportStats();
 
-    // We hold on to our reference to the data until a new session is started, 
+    // We hold on to our reference to the data until a new session is started,
     // so that if settings change, the exporters still have data to export
 }
 
@@ -205,7 +212,7 @@ void StatsPlugin::onGameSessionLoaded(rfcommon::Session* game)
 }
 
 // ----------------------------------------------------------------------------
-void StatsPlugin::onGameSessionUnloaded(rfcommon::Session* game) 
+void StatsPlugin::onGameSessionUnloaded(rfcommon::Session* game)
 {
     statsCalculator_->resetStatistics();
     clearSession();

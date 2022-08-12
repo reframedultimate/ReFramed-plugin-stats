@@ -21,11 +21,24 @@ static void destroyStatsPlugin(rfcommon::Plugin* model)
     delete model;
 }
 
+// Here we declare the types of interfaces that our plugin supports. This
+// is mostly so the main application can sort our plugin into categories
+// and show it in views where it makes sense. In our case , we support:
+//  - UI: Simply means we have a graphical user interface for the user
+//  - REALTIME: Means we are interested in dealing with live sessions as they
+//              are played.
+//  - REPLAY: Means we also support processing sessions that were saved to
+//            disk (replay files)
+static RFPluginType statsPluginTypes =
+        RFPluginType::UI |
+        RFPluginType::REALTIME |
+        RFPluginType::REPLAY;
+
 // This is a list of create/destroy functions which the main application uses
 // to instantiate your plugins. You can have multiple plugins in a single
 // shared libary, but in this case we only have one.
 static RFPluginFactory factories[] = {
-    {createStatsPlugin, destroyStatsPlugin, RFPluginType::REALTIME,
+    {createStatsPlugin, destroyStatsPlugin, statsPluginTypes,
     {"Statistics",
      "misc > misc",  // category > sub-category
      "Vye, TheComet",  // your name
@@ -66,7 +79,7 @@ static int start(uint32_t version, const char** error)
             return 0;
         licenseFile.close();
     }
-    
+
     LicenseDialog dialog;
     if (dialog.exec() == QDialog::Accepted)
     {

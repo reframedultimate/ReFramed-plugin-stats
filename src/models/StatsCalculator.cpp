@@ -4,6 +4,7 @@
 #include "rfcommon/FrameData.hpp"
 #include "rfcommon/FighterState.hpp"
 #include "rfcommon/LinearMap.hpp"
+#include <limits>
 
 // TODO Extract this info from the global mapping info structure, once
 // ReFramed's refactoring is done and this is possible.
@@ -61,7 +62,7 @@ void StatsCalculator::resetStatistics()
 
 // ----------------------------------------------------------------------------
 void StatsCalculator::updateStatsSilent(const rfcommon::Frame<4>& frame)
-{    
+{
     // We only care about 1v1 for now
     if (frame.count() != 2)
         return;
@@ -119,7 +120,7 @@ void StatsCalculator::DamageCounters::update(const rfcommon::Frame<4>& frame)
         {
             totalDamageTaken[i] += deltaDamage;
 
-            // Figure out which player dealt the damage. If there are more than 2 
+            // Figure out which player dealt the damage. If there are more than 2
             // players we have to rely on attackConnected().
             // XXX There is currently no way to distinguish self-damage from projectile
             // damage. attackConnected() is not true for projectiles.
@@ -276,7 +277,7 @@ void StatsCalculator::StringFinder::reset()
 void StatsCalculator::StringFinder::update(const rfcommon::Frame<4>& frame)
 {
     // To make things a little clearer, we are looking at this from the
-    // perspective of the player dealing the damage ("me"). The player 
+    // perspective of the player dealing the damage ("me"). The player
     // getting combo'd is "them"
     for (int them = 0; them != frame.count(); ++them)
     {
@@ -290,7 +291,7 @@ void StatsCalculator::StringFinder::update(const rfcommon::Frame<4>& frame)
             // follow the string and see how much damage it does/whether it kills
             if (isInNeutralState_[them])
             {
-                // Figure out which player started the combo. 
+                // Figure out which player started the combo.
                 // XXX: Currently we only support 1v1
                 if (frame.count() != 2)
                     return;

@@ -4,7 +4,7 @@
 #include "rfcommon/FrameDataListener.hpp"
 #include "rfcommon/MetaDataListener.hpp"
 #include "rfcommon/ListenerDispatcher.hpp"
-#include "rfcommon/RealtimePlugin.hpp"
+#include "rfcommon/Plugin.hpp"
 #include "rfcommon/Reference.hpp"
 #include <memory>
 
@@ -19,10 +19,13 @@ class StatsCalculator;
 class SettingsModel;
 class UserLabelsModel;
 
-class StatsPlugin 
-    : public rfcommon::RealtimePlugin
-    , public rfcommon::FrameDataListener
-    , public SettingsListener
+class StatsPlugin
+        : public rfcommon::Plugin
+        , public rfcommon::Plugin::UIInterface
+        , public rfcommon::Plugin::RealtimeInterface
+        , public rfcommon::Plugin::ReplayInterface
+        , public rfcommon::FrameDataListener
+        , public SettingsListener
 {
 public:
     StatsPlugin(RFPluginFactory* factory);
@@ -43,6 +46,13 @@ public:
      * \brief Export all statistics to files.
      */
     void exportStats() const;
+
+private:
+    Plugin::UIInterface* uiInterface() override final;
+    Plugin::ReplayInterface* replayInterface() override final;
+    Plugin::VisualizerInterface* visualizerInterface() override final;
+    Plugin::RealtimeInterface* realtimeInterface() override final;
+    Plugin::VideoPlayerInterface* videoPlayerInterface() override final;
 
 private:
     /*!
@@ -85,7 +95,7 @@ private:
     void onTrainingSessionLoaded(rfcommon::Session* training) override;
     void onTrainingSessionUnloaded(rfcommon::Session* training) override;
 
-    // These get called when the user selects multiple replay files in ReFramed and 
+    // These get called when the user selects multiple replay files in ReFramed and
     // loads them
     void onGameSessionSetLoaded(rfcommon::Session** games, int numGames) override;
     void onGameSessionSetUnloaded(rfcommon::Session** games, int numGames) override;
