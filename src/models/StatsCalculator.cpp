@@ -457,7 +457,7 @@ int StatsCalculator::numSelfDestructs(int fighterIdx) const
 
     int opponentIdx = 1 - fighterIdx;
 
-    return numStocks(fighterIdx) - numStocksTaken(opponentIdx);
+    return numStocks(opponentIdx) - numStocksTaken(opponentIdx);
 }
 
 // ----------------------------------------------------------------------------
