@@ -1,9 +1,10 @@
 #pragma once
 
+#include "rfcommon/FighterMotion.hpp"
 #include "rfcommon/ListenerDispatcher.hpp"
 #include "rfcommon/MetaDataListener.hpp"
 #include "rfcommon/Reference.hpp"
-#include "rfcommon/FighterMotion.hpp"
+#include "rfcommon/UserMotionLabelsListener.hpp"
 #include <QString>
 
 class PlayerMetaListener;
@@ -15,7 +16,9 @@ namespace rfcommon {
     class UserMotionLabels;
 }
 
-class PlayerMeta : public rfcommon::MetaDataListener
+class PlayerMeta 
+        : public rfcommon::MetaDataListener
+        , public rfcommon::UserMotionLabelsListener
 {
 public:
     PlayerMeta(rfcommon::UserMotionLabels* userLabels, rfcommon::Hash40Strings* hash40Strings);
@@ -43,6 +46,14 @@ private:
 
     // In training mode this increments every time a new training room is loaded
     void onMetaDataTrainingSessionNumberChanged(rfcommon::GameNumber number) override;
+
+private:
+    // If motion labels are edited, we need to update the table (and possibly re-export data)
+    void onUserMotionLabelsLayerAdded(int layerIdx, const char* name) override;
+    void onUserMotionLabelsLayerRemoved(int layerIdx, const char* name) override;
+    void onUserMotionLabelsNewEntry(rfcommon::FighterID fighterID, int entryIdx) override;
+    void onUserMotionLabelsEntryChanged(rfcommon::FighterID fighterID, int entryIdx) override;
+    void onUserMotionLabelsEntryRemoved(rfcommon::FighterID fighterID, int entryIdx) override;
 
 private:
     struct Player

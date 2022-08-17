@@ -9,13 +9,17 @@
 PlayerMeta::PlayerMeta(rfcommon::UserMotionLabels* userLabels, rfcommon::Hash40Strings* hash40Strings)
     : userLabels_(userLabels)
     , hash40Strings_(hash40Strings)
-{}
+{
+    userLabels_->dispatcher.addListener(this);
+}
 
 // ----------------------------------------------------------------------------
 PlayerMeta::~PlayerMeta()
 {
     if (metaData_)
         metaData_->dispatcher.removeListener(this);
+
+    userLabels_->dispatcher.removeListener(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -90,36 +94,17 @@ void PlayerMeta::onMetaDataPlayerNameChanged(int fighterIdx, const rfcommon::Str
 }
 
 // ----------------------------------------------------------------------------
-void PlayerMeta::onMetaDataTimeStartedChanged(rfcommon::TimeStamp timeStarted) 
-{
-}
+void PlayerMeta::onMetaDataTimeStartedChanged(rfcommon::TimeStamp timeStarted)  {}
+void PlayerMeta::onMetaDataTimeEndedChanged(rfcommon::TimeStamp timeEnded) {}
+void PlayerMeta::onMetaDataSetNumberChanged(rfcommon::SetNumber number) {}
+void PlayerMeta::onMetaDataGameNumberChanged(rfcommon::GameNumber number) {}
+void PlayerMeta::onMetaDataSetFormatChanged(const rfcommon::SetFormat& format) {}
+void PlayerMeta::onMetaDataWinnerChanged(int winnerPlayerIdx) {}
+void PlayerMeta::onMetaDataTrainingSessionNumberChanged(rfcommon::GameNumber number) {}
 
 // ----------------------------------------------------------------------------
-void PlayerMeta::onMetaDataTimeEndedChanged(rfcommon::TimeStamp timeEnded) 
-{
-}
-
-// ----------------------------------------------------------------------------
-void PlayerMeta::onMetaDataSetNumberChanged(rfcommon::SetNumber number) 
-{
-}
-
-// ----------------------------------------------------------------------------
-void PlayerMeta::onMetaDataGameNumberChanged(rfcommon::GameNumber number) 
-{
-}
-
-// ----------------------------------------------------------------------------
-void PlayerMeta::onMetaDataSetFormatChanged(const rfcommon::SetFormat& format) 
-{
-}
-
-// ----------------------------------------------------------------------------
-void PlayerMeta::onMetaDataWinnerChanged(int winnerPlayerIdx) 
-{
-}
-
-// ----------------------------------------------------------------------------
-void PlayerMeta::onMetaDataTrainingSessionNumberChanged(rfcommon::GameNumber number)
-{
-}
+void PlayerMeta::onUserMotionLabelsLayerAdded(int layerIdx, const char* name) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
+void PlayerMeta::onUserMotionLabelsLayerRemoved(int layerIdx, const char* name) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
+void PlayerMeta::onUserMotionLabelsNewEntry(rfcommon::FighterID fighterID, int entryIdx) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
+void PlayerMeta::onUserMotionLabelsEntryChanged(rfcommon::FighterID fighterID, int entryIdx) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
+void PlayerMeta::onUserMotionLabelsEntryRemoved(rfcommon::FighterID fighterID, int entryIdx) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }

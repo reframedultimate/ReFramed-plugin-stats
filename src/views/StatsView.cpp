@@ -137,8 +137,12 @@ void StatsView::onSettingsOBSChanged()
 // ----------------------------------------------------------------------------
 void StatsView::onPlayerMetaChanged()
 {
+    // Names might have changed
     const QString& p1name = playerMeta_->character(0);
     const QString& p2name = playerMeta_->character(1);
     p1Label_->setText(playerMeta_->name(0) + (p1name.size() ? " (" + p1name + ")" : ""));
     p2Label_->setText(playerMeta_->name(1) + (p2name.size() ? " (" + p2name + ")" : ""));
+
+    // User labels might have changed. It's easier to just update all 
+    updateStatsLabels();
 }
