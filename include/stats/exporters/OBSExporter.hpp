@@ -3,16 +3,19 @@
 #include <QString>
 #include <QVector>
 
+class PlayerMeta;
 class StatsCalculator;
 class SettingsModel;
-class UserLabelsModel;
 
 class QDir;
 
 class OBSExporter
 {
 public:
-    OBSExporter(const StatsCalculator* stats, const SettingsModel* settings, const UserLabelsModel* labels);
+    OBSExporter(
+        const PlayerMeta* playerMeta,
+        const StatsCalculator* stats,
+        const SettingsModel* settings);
     bool exportEmptyValues() const;
     bool exportStatistics() const;
 
@@ -28,9 +31,9 @@ private:
     bool writePlayerStatsEmpty() const;
 
 private:
+    const PlayerMeta* playerMeta_;
     const StatsCalculator* stats_;
     const SettingsModel* settings_;
-    const UserLabelsModel* labels_;
     QVector<QString> tags_;
     QVector<QString> chars_;
 };

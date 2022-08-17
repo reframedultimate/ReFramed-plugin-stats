@@ -15,7 +15,6 @@ class QGridLayout;
 class QLabel;
 class StatsCalculator;
 class SettingsModel;
-class UserLabelsModel;
 
 class StatsView 
     : public QWidget
@@ -26,7 +25,11 @@ class StatsView
     Q_OBJECT
 
 public:
-    explicit StatsView(PlayerMeta* playerMeta, StatsCalculator* stats, SettingsModel* settings, UserLabelsModel* labels, QWidget* parent=nullptr);
+    explicit StatsView(
+        PlayerMeta* playerMeta,
+        StatsCalculator* stats,
+        SettingsModel* settings,
+        QWidget* parent=nullptr);
     ~StatsView();
 
 private:
@@ -51,8 +54,6 @@ private:
 
     // We also listen to changes to the settings
     SettingsModel* settings_;
-
-    UserLabelsModel* labels_;
 
     // Holds all of the UI text labels with statistics from the calculator
     QGridLayout* layout_;

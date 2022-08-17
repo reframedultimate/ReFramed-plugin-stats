@@ -21,12 +21,15 @@ static void clearLayout(QLayout* layout)
 }
 
 // ----------------------------------------------------------------------------
-StatsView::StatsView(PlayerMeta* playerMeta, StatsCalculator* stats, SettingsModel* settings, UserLabelsModel* labels, QWidget* parent)
+StatsView::StatsView(
+        PlayerMeta* playerMeta,
+        StatsCalculator* stats,
+        SettingsModel* settings,
+        QWidget* parent)
     : QWidget(parent)
     , playerMeta_(playerMeta)
     , stats_(stats)
     , settings_(settings)
-    , labels_(labels)
     , layout_(new QGridLayout)
 {
     setLayout(layout_);
@@ -51,7 +54,7 @@ StatsView::~StatsView()
 // ----------------------------------------------------------------------------
 void StatsView::updateStatsLabels()
 {
-    StatsFormatter fmt(stats_, labels_);
+    StatsFormatter fmt(stats_, playerMeta_);
     for (int i = 0; i != settings_->numStatsEnabled(); ++i)
     {
         StatType statType = settings_->statAtIndex(i);

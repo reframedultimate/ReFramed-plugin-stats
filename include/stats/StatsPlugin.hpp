@@ -10,14 +10,15 @@
 
 namespace rfcommon {
     class FrameData;
+    class Hash40Strings;
     class MappingInfo;
     class MetaData;
+    class UserMotionLabels;
 }
 
 class PlayerMeta;
 class StatsCalculator;
 class SettingsModel;
-class UserLabelsModel;
 
 class StatsPlugin
         : public rfcommon::Plugin
@@ -28,7 +29,7 @@ class StatsPlugin
         , public SettingsListener
 {
 public:
-    StatsPlugin(RFPluginFactory* factory);
+    StatsPlugin(RFPluginFactory* factory, rfcommon::UserMotionLabels* userLabels, rfcommon::Hash40Strings* hash40Strings);
     ~StatsPlugin();
 
     void resetStatsIfAppropriate(rfcommon::Session* session);
@@ -115,6 +116,5 @@ private:
     std::unique_ptr<PlayerMeta> playerMeta_;
     std::unique_ptr<StatsCalculator> statsCalculator_;
     std::unique_ptr<SettingsModel> settingsModel_;
-    std::unique_ptr<UserLabelsModel> motionLabels_;
     bool weAreLive_ = false;
 };

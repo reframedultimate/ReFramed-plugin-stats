@@ -23,7 +23,6 @@ reframed_add_plugin (plugin-${PLUGIN_NAME}
         "src/models/SettingsModel.cpp"
         "src/models/StatsCalculator.cpp"
         "src/models/PlayerMeta.cpp"
-        "src/models/UserLabelsModel.cpp"
         "src/util/Paths.cpp"
         "src/util/StatsFormatter.cpp"
         "src/views/LicenseDialog.cpp"
@@ -43,7 +42,6 @@ reframed_add_plugin (plugin-${PLUGIN_NAME}
         "include/${PLUGIN_NAME}/models/SettingsModel.hpp"
         "include/${PLUGIN_NAME}/models/StatsCalculator.hpp"
         "include/${PLUGIN_NAME}/models/PlayerMeta.hpp"
-        "include/${PLUGIN_NAME}/models/UserLabelsModel.hpp"
         "include/${PLUGIN_NAME}/util/Paths.hpp"
         "include/${PLUGIN_NAME}/util/StatsFormatter.hpp"
         "include/${PLUGIN_NAME}/views/LicenseDialog.hpp"
@@ -62,9 +60,7 @@ reframed_add_plugin (plugin-${PLUGIN_NAME}
         "include/${PLUGIN_NAME}/views/SettingsView.hpp"
         "include/${PLUGIN_NAME}/views/StatsView.hpp"
         "include/${PLUGIN_NAME}/widgets/SettingsDragWidget.hpp"
-        "include/${PLUGIN_NAME}/widgets/SettingsStatsItem.hpp"
-    DATA
-        "data/ParamLabels.csv")
+        "include/${PLUGIN_NAME}/widgets/SettingsStatsItem.hpp")
 
 if (${REFRAMED_plugin-${PLUGIN_NAME}})
     if (STATS_ENABLE_LICENSING AND NOT STATS_LICENSED_TO)

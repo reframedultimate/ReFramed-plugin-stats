@@ -1,10 +1,14 @@
 #include "stats/listeners/PlayerMetaListener.hpp"
 #include "stats/models/PlayerMeta.hpp"
+#include "rfcommon/Hash40Strings.hpp"
 #include "rfcommon/MappingInfo.hpp"
 #include "rfcommon/MetaData.hpp"
+#include "rfcommon/UserMotionLabels.hpp"
 
 // ----------------------------------------------------------------------------
-PlayerMeta::PlayerMeta()
+PlayerMeta::PlayerMeta(rfcommon::UserMotionLabels* userLabels, rfcommon::Hash40Strings* hash40Strings)
+    : userLabels_(userLabels)
+    , hash40Strings_(hash40Strings)
 {}
 
 // ----------------------------------------------------------------------------
@@ -56,6 +60,26 @@ QString PlayerMeta::character(int fighterIdx) const
     return players_.count() ?
         players_[fighterIdx].character :
         "";
+}
+
+// ----------------------------------------------------------------------------
+QString PlayerMeta::moveName(int fighterIdx, rfcommon::FighterMotion motion) const
+{
+    const char* label = nullptr;
+
+    if (motion.isValid() == false)
+        return "None";
+
+    if (metaData_.notNull())
+    {
+        const auto fighterID = metaData_->fighterID(fighterIdx);
+        label = userLabels_->toUserLabel(fighterID, motion, nullptr);
+    }
+
+    if (label == nullptr)
+        label = hash40Strings_->toString(motion, "(unknown move)");
+
+    return label;
 }
 
 // ----------------------------------------------------------------------------

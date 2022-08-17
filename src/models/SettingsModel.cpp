@@ -25,7 +25,7 @@ bool SettingsModel::load()
     const QJsonObject obs = data["obs"].toObject();
     exportToOBS_ = obs["enabled"].toBool(false);
     additionalNewlinesOBS_ = obs["extranewlines"].toInt(0);
-    destinationFolderOBS_ = obs["dir"].toString("");
+    destinationFolderOBS_.setPath(obs["dir"].toString(""));
     exportIntervalOBS_ = obs["exportinterval"].toInt(0);
 
     const QJsonObject stats = data["stats"].toObject();

@@ -3,7 +3,6 @@
 #include "stats/models/PlayerMeta.hpp"
 #include "stats/models/StatsCalculator.hpp"
 #include "stats/models/SettingsModel.hpp"
-#include "stats/models/UserLabelsModel.hpp"
 #include "stats/util/Paths.hpp"
 #include "stats/views/MainView.hpp"
 
@@ -14,19 +13,12 @@
 #include "rfcommon/Session.hpp"
 
 // ----------------------------------------------------------------------------
-StatsPlugin::StatsPlugin(RFPluginFactory* factory)
+StatsPlugin::StatsPlugin(RFPluginFactory* factory, rfcommon::UserMotionLabels* userLabels, rfcommon::Hash40Strings* hash40Strings)
     : Plugin(factory)
-    , playerMeta_(new PlayerMeta)
+    , playerMeta_(new PlayerMeta(userLabels, hash40Strings))
     , statsCalculator_(new StatsCalculator)
     , settingsModel_(new SettingsModel(dataDir().absoluteFilePath("settings.json")))
-    , motionLabels_(new UserLabelsModel)
 {
-#if defined(_WIN32)
-    motionLabels_->loadMotionLabels("share\\reframed\\data\\plugin-stats\\ParamLabels.csv");
-#else
-    motionLabels_->loadMotionLabels("share/reframed/data/plugin-stats/ParamLabels.csv");
-#endif
-
     settingsModel_->dispatcher.addListener(this);
 }
 
@@ -100,7 +92,7 @@ void StatsPlugin::exportEmptyStats() const
 {
     if (settingsModel_->exportToOBS())
     {
-        OBSExporter exporter(statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
+        OBSExporter exporter(playerMeta_.get(), statsCalculator_.get(), settingsModel_.get());
         exporter.setPlayerTag(0, playerMeta_->name(0));
         exporter.setPlayerTag(1, playerMeta_->name(1));
         exporter.setPlayerCharacter(0, playerMeta_->character(0));
@@ -114,7 +106,7 @@ void StatsPlugin::exportStats() const
 {
     if (settingsModel_->exportToOBS())
     {
-        OBSExporter exporter(statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
+        OBSExporter exporter(playerMeta_.get(), statsCalculator_.get(), settingsModel_.get());
         exporter.setPlayerTag(0, playerMeta_->name(0));
         exporter.setPlayerTag(1, playerMeta_->name(1));
         exporter.setPlayerCharacter(0, playerMeta_->character(0));
@@ -135,7 +127,7 @@ QWidget* StatsPlugin::createView()
 {
     // Create new instance of view. The view registers as a listener to this model
     //return new StatsView(model_.get());
-    return new MainView(playerMeta_.get(), statsCalculator_.get(), settingsModel_.get(), motionLabels_.get());
+    return new MainView(playerMeta_.get(), statsCalculator_.get(), settingsModel_.get());
 }
 
 // ----------------------------------------------------------------------------

@@ -3,19 +3,22 @@
 #include "rfcommon/ListenerDispatcher.hpp"
 #include "rfcommon/MetaDataListener.hpp"
 #include "rfcommon/Reference.hpp"
+#include "rfcommon/FighterMotion.hpp"
 #include <QString>
 
 class PlayerMetaListener;
 
 namespace rfcommon {
+    class Hash40Strings;
     class MappingInfo;
     class MetaData;
+    class UserMotionLabels;
 }
 
 class PlayerMeta : public rfcommon::MetaDataListener
 {
 public:
-    PlayerMeta();
+    PlayerMeta(rfcommon::UserMotionLabels* userLabels, rfcommon::Hash40Strings* hash40Strings);
     ~PlayerMeta();
 
     void setMetaData(rfcommon::MappingInfo* map, rfcommon::MetaData* mdata);
@@ -23,6 +26,7 @@ public:
 
     QString name(int fighterIdx) const;
     QString character(int fighterIdx) const;
+    QString moveName(int fighterIdx, rfcommon::FighterMotion motion) const;
 
     rfcommon::ListenerDispatcher<PlayerMetaListener> dispatcher;
 
@@ -48,5 +52,7 @@ private:
     };
 
     rfcommon::Reference<rfcommon::MetaData> metaData_;
+    rfcommon::Reference<rfcommon::UserMotionLabels> userLabels_;
+    rfcommon::Reference<rfcommon::Hash40Strings> hash40Strings_;
     rfcommon::SmallVector<Player, 2> players_;
 };
