@@ -106,5 +106,5 @@ void PlayerMeta::onMetaDataTrainingSessionNumberChanged(rfcommon::GameNumber num
 void PlayerMeta::onUserMotionLabelsLayerAdded(int layerIdx, const char* name) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
 void PlayerMeta::onUserMotionLabelsLayerRemoved(int layerIdx, const char* name) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
 void PlayerMeta::onUserMotionLabelsNewEntry(rfcommon::FighterID fighterID, int entryIdx) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
-void PlayerMeta::onUserMotionLabelsEntryChanged(rfcommon::FighterID fighterID, int entryIdx) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
-void PlayerMeta::onUserMotionLabelsEntryRemoved(rfcommon::FighterID fighterID, int entryIdx) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
+void PlayerMeta::onUserMotionLabelsUserLabelChanged(rfcommon::FighterID fighterID, int entryIdx, const char* oldLabel, const char* newLabel) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
+void PlayerMeta::onUserMotionLabelsCategoryChanged(rfcommon::FighterID fighterID, int entryIdx, rfcommon::UserMotionLabelsCategory oldCategory, rfcommon::UserMotionLabelsCategory newCategory) { dispatcher.dispatch(&PlayerMetaListener::onPlayerMetaChanged); }
