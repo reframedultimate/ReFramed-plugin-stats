@@ -1,14 +1,14 @@
-# Statistics Stream Overlay Plugin
+# Statistics Plugin
 
-This plugin calculates general statistics after each game. The statistics can be exported to OBS to create a stream overlay.
+This plugin calculates general statistics. The statistics can be exported as text files and read by OBS to be used in stream overlays.
 
-# Available Statistics
+## Available Statistics
 
-The following stats are available:
   - **Neutral Wins**: Number of times a player won neutral
   - **Neutral Losses**: Number of times a player lost neutral
   - **Non-Killing Neutral Wins**: Number of times a player won neutral and it didn't lead to a kill (opponent was able to reset neutral again)
   - **Stocks Taken**: Number of times a player won neutral and got a kill (This of course, will not count SDs as a kill)
+  - **Stocks**: Number of times a your opponent has died. (Essentially the same as _Stocks Taken_, but includes SDs)
   - **Self Destructs**: Number of times a player dies, but was not killed.
   - **Neutral Win%**: Measure of how much more a player was able to win neutral vs their opponent
   - **Average Damage / Opening**: The average amount of damage a player does for every time they get an opening
@@ -22,9 +22,9 @@ The following stats are available:
   - **Most Common Kill Move**: The most common move that resulted in a KO
   - **Most Common Neutral Opener Into Kill Move**: The most common move that started a string/combo which lead into a KO
 
-# Compiling
+## Compiling
 
-## On Windows
+### On Windows
 
 In short:
   1) Download and install Qt5.
@@ -91,4 +91,3 @@ cmake --build . --config Debug
 The plugin is automatically copied to ```C:\ReFramed-debug-master``` so you should be able to double-click on ```ReFramed.exe``` and launch the plugin from there.
 
 To set things up in Visual Studio, you can double-click on the solution file (.sln) in the build-debug folder for this plugin. Set the ```plugin-stats``` project as the active project by right-clicking on it and selecting "Set as active project". Then, right-click on the "plugin-stats" project again and go to properties, and under "Debugging" you need to select the command to launch ```C:\ReFramed-debug-master\ReFramed.exe``` and also set the working directory to ```C:\ReFramed-debug-master```. After that, you can simply press F5 to start debugging the plugin.
-
