@@ -60,6 +60,17 @@ static int start(uint32_t version, const char** error)
     // error message to *error so the main application can tell the user what
     // went wrong.
 
+    
+    //Version Check
+    const uint32_t rf_mmp = version >> 8;
+    const uint32_t stats_mmp = PLUGIN_VERSION >> 8;
+    if (rf_mmp != stats_mmp)
+    {
+        *error = "Stats version " PLUGIN_VERSION_STR " is incompatible with your current version of ReFramed.";
+        return -1;
+    }
+    
+
     if (ensureDataDirExists() == false)
     {
         *error = "Failed to create data directory";
