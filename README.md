@@ -1,9 +1,10 @@
 # Statistics Plugin
-
 This plugin calculates general statistics. The statistics can be exported as text files and read by OBS to be used in stream overlays.
 
-## Available Statistics
+_Plugin Window:_
+![Plugin Window](https://imgur.com/FeiKfO1.jpg)
 
+## Available Statistics
   - **Neutral Wins**: Number of times a player won neutral
   - **Neutral Losses**: Number of times a player lost neutral
   - **Non-Killing Neutral Wins**: Number of times a player won neutral and it didn't lead to a kill (opponent was able to reset neutral again)
@@ -21,6 +22,15 @@ This plugin calculates general statistics. The statistics can be exported as tex
   - **Most Common Neutral Opening Move**: The move that was used the most to win neutral
   - **Most Common Kill Move**: The most common move that resulted in a KO
   - **Most Common Neutral Opener Into Kill Move**: The most common move that started a string/combo which lead into a KO
+
+_Example from Tru4:_
+![Example stream from Tru4](https://imgur.com/qvLK155.jpg)
+
+_Example from Tournameta:_
+![Example stream from Tournameta](https://imgur.com/52Sq7Sb.jpg)
+
+_Example from CouchwarriorsSmash:_
+![Example stream from CouchWarriorsSmash](https://imgur.com/wP2dgMt.jpg)
 
 ## Compiling
 
