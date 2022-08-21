@@ -77,7 +77,7 @@ QString PlayerMeta::moveName(int fighterIdx, rfcommon::FighterMotion motion) con
     if (metaData_.notNull())
     {
         const auto fighterID = metaData_->fighterID(fighterIdx);
-        label = userLabels_->toUserLabel(fighterID, motion, nullptr);
+        label = userLabels_->toStringHighestLayer(fighterID, motion, nullptr);
     }
 
     if (label == nullptr)
